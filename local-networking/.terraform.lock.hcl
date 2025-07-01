@@ -1,0 +1,43 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/hashicorp/google" {
+  version = "6.41.0"
+  hashes = [
+    "h1:ecCCOOF2ZDP1vLT/PDVNcL0+1PbtG2auHg8KcSyXI8Y=",
+    "zh:0a375c4f37599de566b6dd19d1953f70f6f88f089bb7cf97d1fa1287b2ebf41c",
+    "zh:2309a75bf6bd6f97ccae0c8348bb560eb893518786150cb634bc7795898d38f9",
+    "zh:66ed27c1b9a2b8ab7910954447f77efb319f49bc546d3611fd00d56776a928d8",
+    "zh:7a8624d5b8d8aee0604cb9a5bc0fb450d235983cf540dd19f68535063fa8cf17",
+    "zh:883879b1d5d3058d87db13b824c15193e3e2e4995a3b8165ce5835872b955349",
+    "zh:89971c2ca25a546febbab693f98480a1c032945e7b10e4ccfc0273c5201978bd",
+    "zh:923281ee1f1f5bb827786a198973abfdfb2a86e87d751e37809a19e55e84c160",
+    "zh:c0a28bee3e4e8722463e53ca5a090d4df5b6db5fdfb9f622461bc9bc3f27f418",
+    "zh:c3ac6015b50c93f12cced716ad92f072a8a1245924b034b4a9bc9261eb31fbde",
+    "zh:d70f83f015182021a4593cd4a9a2687f83c0aa6fd54a982bd374ef0fd25113f2",
+    "zh:ed9eb0992e901c7b832ae50dc267d12febf53f89ee6b1a02320b7a145830c6ce",
+    "zh:f569b65999264a9416862bca5cd2a6177d94ccb0424f3a4ef424428912b9cb3c",
+  ]
+}
+
+provider "registry.terraform.io/terraform-routeros/routeros" {
+  version     = "1.85.3"
+  constraints = "~> 1.0"
+  hashes = [
+    "h1:1YfJcd9X3TsnrKhpBqxvEPTt8X9hQRRK66EqXAgZJfY=",
+    "zh:10a8bf40e463d2d618c8a2770a3ae9a80f7358241ee02e06d6f5df43dd253961",
+    "zh:1e9891995f8abfcb42486759ad54925ef86143c2cace5261524a283a08d20e00",
+    "zh:20f88b64a46d6b8fd562f1a6cd6db0c40a6e99d4d16284b635a8823ad9a0cf00",
+    "zh:23e01faa918479739e97d9ba055b06b03a58ab13e1569b33fa72240ffea79389",
+    "zh:7175979ba88ef6e1f5e6827f8cf602899374a75c043daf66160c28ae90c775a2",
+    "zh:906cd11340e915c7083dd581f1d4101447a9d1a96ea6915d0717e94a815a8bb4",
+    "zh:971d504b45ca3b8fe9e0afdc7a42c1e25f2158ad052e670a4e46cc66e853f26e",
+    "zh:b4de2da004a350ad0b7a482cd57152bc72577a3d6736b826b77141dc7700cd43",
+    "zh:b53d2336a7cdcf5cdacad8c99f1bf1203c782b92f9cac1b144d24aaeef1c366a",
+    "zh:b8282c92b1c57e98543ec2cf0f5d4ebfca017e04705dd5255f936eaf4269963f",
+    "zh:be1e9afbbdb58ab06bf3259fe2581bc7ba570b6686f5f0a4bb39e7cfcdb7c6d0",
+    "zh:e665ed914b88d07a3b82d1ecbe10dcb765a9f112c80b5c0b83e3b0ee128bc182",
+    "zh:eaf1231d6ec64a7eff851a3a2d81175ec67da4a16154661e701c3e39001cfe15",
+    "zh:ff3a1e8819a19d946d357d6c218c7a35d3bd455fc36127b37be0071f5f55a116",
+  ]
+}
