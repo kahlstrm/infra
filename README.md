@@ -1,0 +1,41 @@
+# Infrastructure
+
+This repository is an experimental playground for managing a personal hardware setup using Infrastructure as Code. It uses Terraform for the declarative setup, Nix for tooling, and Just for scripting, with a focus on leveraging free-tier services from Google Cloud.
+
+## Technologies Used
+
+- [Terraform](https://www.terraform.io/)
+- [Google Cloud Platform](https://cloud.google.com/) (GCS, Secret Manager)
+- [Nix](https://nixos.org/)
+- [Just](https://github.com/casey/just)
+- [MikroTik RouterOS](https://mikrotik.com/platform/routeros)
+
+## Getting Started
+
+1.  **Install Nix:** Follow the instructions on the [Nix website](https://nixos.org/download.html) to install Nix.
+2.  **Enter the development environment:** Run `nix develop` in the root of the repository to enter a shell with all the necessary dependencies.
+3.  **Authenticate with Google Cloud:** Run `gcloud auth application-default login` to authenticate with your Google Cloud account.
+4.  **Initialize Terraform:** Navigate to the `local-networking` directory and run `terraform init`.
+5.  **Apply the configuration:** Run `terraform apply` to apply the Terraform configuration.
+
+## Configuration
+
+Secrets are managed using Google Secret Manager. The `modules/secrets` module creates a secret in Secret Manager, but the actual value of the secret must be set manually. This is to avoid storing sensitive information in the repository.
+
+The secret management workflow is designed to stay within the free tier of Google Secret Manager, which allows for up to 6 active secret versions. The provided `just` scripts assist with this; for example, `just clean` will prune old, disabled versions, keeping only the most recent two.
+
+After first running `terraform apply -target module.secrets` inside a layer, you can then go on and setup the required secrets for that layer. To configure the secrets for the `local-networking` layer, you can use the `just edit` command from within the `local-networking` directory. This will open the secret in your default editor (`$EDITOR`, with a fallback to `vim`) and upload the new version to Google Secret Manager.
+
+Alternatively, you can manually create a JSON file with the following structure:
+
+```json
+{
+  "hex_s": {
+    "username": "your-username",
+    "password": "your-password",
+    "ipAddress": "192.168.88.1"
+  }
+}
+```
+
+Then, you can add this to the `local-networking` secret in Google Secret Manager.

@@ -24,7 +24,7 @@ edit:
 
     echo "Downloading current secret..."
     gcloud secrets versions access latest --secret="$SECRET_NAME" | jq . > $TEMP_FILE
-    nvim $TEMP_FILE
+    ${EDITOR:-vim} $TEMP_FILE
 
     echo "Validating and formatting JSON..."
     if ! jq empty < $TEMP_FILE; then

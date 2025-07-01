@@ -7,7 +7,7 @@ pkgs.mkShell {
     google-cloud-sdk
     terraform
     jq
-    neovim
+    vim
     just
   ];
 }
