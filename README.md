@@ -2,13 +2,31 @@
 
 This repository is an experimental playground for managing a personal hardware setup using Infrastructure as Code. It uses Terraform for the declarative setup, Nix for tooling, and Just for scripting, with a focus on leveraging free-tier services from Google Cloud.
 
+## Hardware Setup
+
+### Minirack (Portable)
+
+- [DeskPi RackMate T0](https://deskpi.com/products/deskpi-rackmate-t1-rackmount-10-inch-4u-server-cabinet-for-network-servers-audio-and-video-equipment) - 10" 4U minirack
+- [MikroTik RB5009UPr+S+IN](https://mikrotik.com/product/rb5009upr_s_in) - Main router
+- [MikroTik CRS310-8G+2S+IN](https://mikrotik.com/product/crs310_8g_2s_in) - Switch
+- [Ubiquiti UniFi U7 Pro Wall](https://eu.store.ui.com/eu/en/products/u7-pro-wall) - WiFi access point
+- [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) - runs a self-hosted Unifi controller for managing the AP
+- [Minisforum MS-01](https://minisforumpc.eu/en/products/ms-01) - Compute
+- [Zimaboard 2](https://www.zimaspace.com/products/single-board2-server) - Compute
+
+### Stationary Infrastructure
+
+- [MikroTik hEX S (2025)](https://mikrotik.com/product/hex_s_2025) - Secondary router for failover
+- pannu - Custom built PC
+- [JetKVM](https://jetkvm.com/) - IP KVM for pannu
+
 ## Technologies Used
 
 - [Terraform](https://www.terraform.io/)
+- [MikroTik RouterOS Terraform provider](https://registry.terraform.io/providers/terraform-routeros/routeros/latest/docs)
 - [Google Cloud Platform](https://cloud.google.com/) (GCS, Secret Manager)
 - [Nix](https://nixos.org/)
 - [Just](https://github.com/casey/just)
-- [MikroTik RouterOS](https://mikrotik.com/platform/routeros)
 
 ## Getting Started
 
@@ -32,8 +50,7 @@ Alternatively, you can manually create a JSON file with the following structure:
 {
   "hex_s": {
     "username": "your-username",
-    "password": "your-password",
-    "ipAddress": "192.168.88.1"
+    "password": "your-password"
   }
 }
 ```
