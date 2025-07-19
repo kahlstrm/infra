@@ -53,3 +53,8 @@ module "jetkvm_lease" {
 resource "routeros_ip_dns" "dns" {
   allow_remote_requests = true
 }
+
+resource "routeros_file" "test" {
+  name     = "hexS.rsc"
+  contents = var.bootstrap_script
+}

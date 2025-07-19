@@ -1,9 +1,9 @@
 variable "config" {
   type = object({
-    username           = string
-    password           = string
-    pannu_mac_address  = string
-    jetkvm_mac_address = string
+    username             = string
+    password             = string
+    pannu_mac_address    = string
+    jetkvm_mac_address   = string
     argon_pi_mac_address = string
   })
 }
@@ -47,4 +47,9 @@ variable "vrrp_physical_ip" {
 
 variable "pannu_physical_interface" {
   type = string
+}
+
+variable "bootstrap_script" {
+  description = "Contents for the bootstrap script used with reset configuration"
+  type        = string
 }

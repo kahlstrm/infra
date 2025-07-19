@@ -28,4 +28,5 @@ module "hex_s" {
   jetkvm_shared_config     = local.jetkvm_shared_config
   argon_pi_shared_config   = local.argon_pi_shared_config
   pannu_physical_interface = "ether3"
+  bootstrap_script         = file("${path.root}/bootstrap/hexS.rsc")
 }
