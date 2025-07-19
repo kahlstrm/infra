@@ -132,9 +132,9 @@ To bootstrap a new MikroTik device and integrate it into the Terraform-managed n
 
 - [ ] Implement stationary module (hEX S)
   - [x] Minimal bootstrap script
-  - [ ] Basic network configuration (IP addressing, DHCP)
-  - [ ] Configure failover DHCP server with static leases (pannu, JetKVM)
-  - [ ] VRRP setup for failover
+  - [x] Basic network configuration (IP addressing, DHCP)
+  - [x] Configure failover DHCP server with static leases (pannu, JetKVM)
+  - [x] VRRP setup for failover
   - [ ] Firewall rules
 - [ ] Implement minirack module (RB5009 + CRS310)
   - [ ] RB5009 minimal bootstrap script

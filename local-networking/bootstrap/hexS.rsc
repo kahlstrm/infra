@@ -84,7 +84,7 @@
 
   # Configure IP, DHCP, and add to LAN interface list.
   /ip pool add name=$localDhcpPoolName ranges=$localDhcpPoolRange;
-  /ip dhcp-server add name=bootstrap address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no;
+  /ip dhcp-server add name="local-bridge" address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no comment="bootstrap";
   /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
   /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
