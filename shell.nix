@@ -1,13 +1,16 @@
 {
   pkgs ? import <nixpkgs> { },
 }:
-pkgs.mkShell {
+pkgs.mkShellNoCC {
   # nativeBuildInputs is usually what you want -- tools you need to run
   nativeBuildInputs = with pkgs; [
     google-cloud-sdk
-    terraform
+    opentofu
     jq
     vim
     just
   ];
+  shellHook = ''
+    alias terraform=tofu
+  '';
 }
