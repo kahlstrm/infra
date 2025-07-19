@@ -11,10 +11,11 @@ Two logical sites that can work independently or together:
 
 ### IP Ranges
 
-- **Minirack LAN**: `10.10.10.0/24`
-- **Stationary LAN**: `10.20.10.0/24`
-- **Stationary LAN local DHCP**: `10.21.10.0/24`
-- **VRRP Virtual Gateway**: `10.10.1.1` (shared between both routers)
+- **Minirack LAN**: `10.10.10.0/24` (for devices connected only to the RB5009)
+- **Stationary LAN**: `10.20.10.0/24` (for devices connected only to the hEX S)
+- **VRRP Network**: `10.1.1.0/24` (a virtual network for high-availability services like `pannu`)
+- **VRRP Virtual Gateway**: `10.1.1.1`
+- **Peering Network**: `10.254.254.0/30` (a private link between the routers)
 - **WireGuard/ZeroTier VPN**: `10.255.255.0/24` (for site-to-site when separated)
 
 ### Network Diagram
@@ -23,7 +24,7 @@ Two logical sites that can work independently or together:
 graph TB
     subgraph "Minirack (Portable)"
         WAN1[Internet WAN 1]
-        RB5009[RB5009<br/>Main Router<br/>10.10.10.1]
+        RB5009[RB5009<br/>Main Router<br/>LAN: 10.10.10.1<br/>VRRP: 10.1.1.2<br/>Peering: 10.254.254.1]
         CRS310[CRS310<br/>Switch]
         U7[U7 Pro<br/>WiFi AP]
         RPI5[RPi 5]
@@ -40,8 +41,8 @@ graph TB
 
     subgraph "Stationary"
         WAN2[Internet WAN 2]
-        HEXS[hEX S<br/>Failover Router<br/>10.20.10.1]
-        PANNU[pannu<br/>Custom PC<br/>10.20.10.10]
+        HEXS[hEX S<br/>Failover Router<br/>LAN: 10.20.10.1<br/>VRRP: 10.1.1.3<br/>Peering: 10.254.254.2]
+        PANNU[pannu<br/>Custom PC<br/>10.1.1.10]
         JETKVM[JetKVM]
 
         WAN2 --> HEXS
@@ -54,7 +55,7 @@ graph TB
     RB5009 -.->|VPN<br/>when separated| HEXS
 
     subgraph "VRRP Virtual Gateway"
-        VRRP[10.10.1.1<br/>Shared Virtual IP]
+        VRRP[10.1.1.1<br/>Shared Virtual IP]
         RB5009 -.->|Priority 255| VRRP
         HEXS -.->|Priority 100| VRRP
     end
@@ -78,14 +79,14 @@ This network is designed for both high performance and automatic failover using 
 
 - **Failure Detection**: When the minirack is disconnected or the RB5009 fails, the hEX S detects the loss of VRRP heartbeats and automatically transitions to become the VRRP Master.
 - **Failover DHCP Activation**: The moment the hEX S becomes master, a VRRP `on-master` script instantly **enables** a small, dedicated DHCP server on the hEX S.
-- **Resilient Connectivity for `pannu`**: This server provides a **static DHCP lease** to `pannu`, ensuring it can get online or renew its lease even when the main router is unavailable. `pannu`'s gateway remains `10.10.1.1`, which is now controlled by the hEX S.
+- **Resilient Connectivity for `pannu`**: This server provides a **static DHCP lease** to `pannu`, ensuring it can get online or renew its lease even when the main router is unavailable. `pannu`'s gateway remains `10.1.1.1`, which is now controlled by the hEX S.
 - **Backup Path**: All traffic from the stationary network now flows through `pannu`'s 1G link to the hEX S and out its own WAN connection.
 
 ## VRRP Setup
 
 VRRP handles automatic failover between routers:
 
-- **Virtual IP**: `10.10.1.1` (gateway for all devices)
+- **Virtual IP**: `10.1.1.1` (gateway for devices on the VRRP network)
 - **RB5009**: Priority 255 (master when connected)
 - **hEX S**: Priority 100 (backup, becomes master when RB5009 unavailable)
 
@@ -121,10 +122,9 @@ To bootstrap a new MikroTik device and integrate it into the Terraform-managed n
 
 1.  **Upload Bootstrap Script**: Access the device's UI (WinBox or HTTP) and upload the device-specific bootstrap script (e.g., `hexS.rsc` for the hEX S) from the `bootstrap/` directory.
 2.  **Reset Configuration**: Navigate to `System -> Reset Configuration` in the UI. Select `No Default Configuration` and choose the script uploaded in Step 1 from the `Run after Reset` option. Confirm and reset the device.
-3.  **Initial Access & Configuration**: After the device reboots, it will be accessible at two primary IP addresses:
-    - **`10.20.10.1`**: The permanent IP on `ether3`. This is the primary address for ongoing management.
-    - **`10.21.10.1`**: The temporary IP on the management bridge (`ether4`, `ether5`). Connect your computer to one of these ports to get a DHCP lease.
-    - **`10.10.254.2`**: The peering IP, if connected to the main router. This is the primary path for Terraform.
+3.  **Initial Access & Configuration**: After the device reboots, it will be accessible in two ways:
+    *   **Via Management LAN**: Connect your computer to **ether4** or **ether5**. Your computer will receive an IP address via DHCP in the `10.20.10.0/24` range. Access the router at `http://10.20.10.1`.
+    *   **Via Peering Link**: If connected to the main router, it is accessible at its peering IP (`10.254.254.2`). This is the primary path for Terraform management.
 4.  **Set Admin Password**: Log in with the username `admin` and no password. Immediately set a strong password for the `admin` user. This password should match the credentials defined in your secrets (viewable via `just view`).
 5.  **Terraform Management**: The device is now ready for Terraform. Terraform will connect via the peering IP and apply the final configuration, including VRRP, failover DHCP, and DNS records.
 

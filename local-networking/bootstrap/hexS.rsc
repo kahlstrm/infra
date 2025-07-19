@@ -24,14 +24,10 @@
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
 :local localBridgePorts {"ether4"; "ether5"}
-:local localIpNetwork "10.21.10.0/24"
+:local localIpNetwork "10.20.10.0/24"
 :local localDhcpPoolStart 100
 :local localDhcpPoolEnd 200
 :local localDhcpPoolName "local-dhcp"
-
-# --- Standalone LAN Ports (no DHCP) ---
-:local standalonePorts {"ether3"}
-:local standaloneIps {"10.20.10.1/24"}
 
 # --- WAN Configuration ---
 :local wanInterface "ether1"
@@ -40,8 +36,8 @@
 # To enable, set 'peeringInterface' to a physical port (e.g. "ether2").
 :local peeringInterface "ether2"
 :local parentLanNetwork "10.10.10.0/24"
-:local childIpInLinkNetwork "10.10.254.2/30"
-:local parentIpInLinkNetwork "10.10.254.1"
+:local childIpInLinkNetwork "10.254.254.2/30"
+:local parentIpInLinkNetwork "10.254.254.1"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -95,15 +91,6 @@
 
   # Set the flag to indicate the bridge was created.
   :set isLocalBridgeCreated true;
-}
-
-# --- Standalone Port Setup ---
-# Configure IP addresses on standalone ports without DHCP.
-:for i from=0 to=([:len $standalonePorts] - 1) do={
-  :local port [:pick $standalonePorts $i];
-  :local ip [:pick $standaloneIps $i];
-  /ip address add address=$ip interface=$port comment="bootstrap: standalone";
-  /interface list member add list=LAN interface=$port comment="bootstrap";
 }
 
 # --- Global Services ---
