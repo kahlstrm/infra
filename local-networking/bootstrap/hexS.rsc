@@ -25,7 +25,9 @@
 :local localBridgeName "local-bridge"
 :local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "sfp1"}
 :local localIpNetwork "10.1.1.0/24"
-:local localBridgeIpAddress "10.1.1.3"
+:local localBridgeIpAddress "10.1.1.1"
+# optional, leave empty if don't want secondary bridge IP
+:local secondaryLocalBridgeIpAddress "10.1.1.3"
 :local localDhcpServerName "vrrp-dhcp"
 :local localDhcpPoolStart 100
 :local localDhcpPoolEnd 254
@@ -82,6 +84,9 @@
   /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no comment="bootstrap";
   /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
   /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
+  :if ($secondaryLocalBridgeIpAddress != "") do={
+    /ip address add address="$secondaryLocalBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
+  }
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
 
   # Set the flag to indicate the bridge was created.

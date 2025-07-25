@@ -1,20 +1,13 @@
-variable "mac_address" {
-  description = "MAC address for the static lease"
-  type        = string
-}
-
-variable "ip_address" {
-  description = "IP address for the static lease"
-  type        = string
+variable "config" {
+  type = object({
+    ip           = string
+    dns_hostname = string
+    mac_address  = string
+  })
 }
 
 variable "dhcp_server" {
   description = "Name of the DHCP server"
-  type        = string
-}
-
-variable "hostname" {
-  description = "Hostnames for the DNS record"
   type        = string
 }
 

@@ -16,3 +16,10 @@ provider "google" {
   region  = "europe-north1"
 }
 
+provider "routeros" {
+  alias    = "hex-s"
+  hosturl  = local.hex_s.ip
+  username = local.config["hex_s"]["username"]
+  password = local.config["hex_s"]["password"]
+  insecure = true
+}

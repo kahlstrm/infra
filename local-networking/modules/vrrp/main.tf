@@ -19,8 +19,9 @@ resource "routeros_interface_vrrp" "vrrp" {
   interface       = var.interface.name
   priority        = var.priority
   preemption_mode = true
-  on_master       = "/ip dhcp-server enable [find name=${var.dhcp_server_name}]"
-  on_backup       = "/ip dhcp-server disable [find name=${var.dhcp_server_name}]"
+  # TODO: check if this is required or not
+  # on_master       = "/ip dhcp-server enable [find name=${var.dhcp_server_name}]"
+  # on_backup       = "/ip dhcp-server disable [find name=${var.dhcp_server_name}]"
 }
 
 # Creates the virtual IP with a /32 mask and assigns it to the VRRP interface.
@@ -39,7 +40,7 @@ module "dhcp" {
   gateway_ip       = var.config.virtual_ip
   dns_servers      = [var.config.virtual_ip]
   pool_ranges      = var.config.dhcp_pool_ranges
-  disabled         = true
+  # disabled         = true
 }
 
 # currently required for firewall rules to allow connecting to router for DNS

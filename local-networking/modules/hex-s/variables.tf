@@ -1,22 +1,16 @@
 variable "config" {
   type = object({
-    username             = string
-    password             = string
-    pannu_mac_address    = string
-    jetkvm_mac_address   = string
-    argon_pi_mac_address = string
+    ip                        = string
+    bootstrap_script          = string
+    bootstrap_script_filename = string
   })
-}
-
-variable "ip" {
-  description = "ip of the device"
-  type        = string
 }
 
 variable "pannu_shared_config" {
   type = object({
     ip           = string
     dns_hostname = string
+    mac_address  = string
   })
 }
 
@@ -24,6 +18,7 @@ variable "jetkvm_shared_config" {
   type = object({
     ip           = string
     dns_hostname = string
+    mac_address  = string
   })
 }
 
@@ -31,6 +26,7 @@ variable "argon_pi_shared_config" {
   type = object({
     ip           = string
     dns_hostname = string
+    mac_address  = string
   })
 }
 
@@ -47,10 +43,5 @@ variable "vrrp_interface" {
     name        = string
     physical_ip = optional(string)
   })
-}
-
-variable "bootstrap_script" {
-  description = "Contents for the bootstrap script used with reset configuration"
-  type        = string
 }
 
