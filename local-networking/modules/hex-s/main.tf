@@ -29,7 +29,7 @@ module "vrrp" {
     name        = local.vrrp_physical_ip_defined ? var.vrrp_interface.name : data.routeros_interfaces.local_bridge_interface[0].interfaces[0].name
     physical_ip = var.vrrp_interface.physical_ip
   }
-  dhcp_server_name = "vrrp-dhcp"
+  dhcp_server_name = var.vrrp_dhcp_server_name
   config           = var.vrrp_shared_config
   priority         = 100
 }

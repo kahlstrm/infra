@@ -36,6 +36,7 @@ module "hex_s" {
   vrrp_interface = {
     name = "local-bridge"
   }
+  vrrp_dhcp_server_name  = "vrrp-dhcp"
   argon_pi_shared_config = local.argon_pi_shared_config
   providers = {
     routeros = routeros.hex-s
@@ -48,6 +49,11 @@ module "hex_s" {
 # - If terraform state does not contain the resources, it will import these.
 # Admittedly this is a bit hacky but it works so ¯\_(ツ)_/¯
 # NOTE: these IDs rely on the bootstrap script creating the specific things in order, changing the script might break these
+# Also, the name of at least the dhcp-server needs to match 1 to 1 in order to avoid rogue DHCP servers. This is due to the fact that
+# terraform will create and destroy the old one on name change, that then changes the underlying ID. After ID is changed the import block below
+# will be ignored after running "reset configuration" on the device. Next terraform apply will create the dhcp server from scratch, and then you
+# end up with 2 competing dhcp servers, one on the VRRP interface and one on the local-bridge interface.
+# TL;DR do not change the dhcp server name
 import {
   to = module.hex_s.module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
   id = "*1"
