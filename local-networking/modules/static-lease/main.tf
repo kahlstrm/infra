@@ -9,6 +9,7 @@ resource "routeros_ip_dhcp_server_lease" "static_lease" {
   mac_address = var.mac_address
   address     = var.ip_address
   server      = var.dhcp_server
+  comment     = var.hostname
 }
 
 resource "routeros_dns_record" "dns_record" {
