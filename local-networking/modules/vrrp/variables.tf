@@ -1,21 +1,16 @@
-variable "interface_name" {
-  description = "The physical interface to run VRRP on."
-  type        = string
-}
+variable "interface" {
+  type = object({
+    name        = string
+    physical_ip = optional(string)
+  })
 
-variable "physical_ip" {
-  description = "The physical IP address (CIDR) for the VRRP interface."
-  type        = string
 }
-
-variable "virtual_ip" {
-  description = "The virtual IP address (CIDR with /32 mask) for the VRRP group."
-  type        = string
-}
-
-variable "dhcp_network_address" {
-  description = "The network for the DHCP server."
-  type        = string
+variable "config" {
+  type = object({
+    vrrp_network     = string
+    virtual_ip       = string
+    dhcp_pool_ranges = optional(list(string))
+  })
 }
 
 variable "priority" {
@@ -32,7 +27,6 @@ variable "vrrp_name" {
 variable "dhcp_server_name" {
   description = "The name for the failover DHCP server."
   type        = string
-  default     = "vrrp-dhcp-server"
 }
 
 variable "lan_interface_list_name" {

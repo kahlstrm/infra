@@ -28,3 +28,9 @@ variable "disabled" {
   type        = bool
   default     = false
 }
+
+variable "pool_ranges" {
+  description = "DHCP pool ranges e.g.  [\"10.0.0.100-10.0.0.200\"]"
+  type        = list(string)
+  nullable    = true
+}

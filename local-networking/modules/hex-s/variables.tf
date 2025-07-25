@@ -36,20 +36,21 @@ variable "argon_pi_shared_config" {
 
 variable "vrrp_shared_config" {
   type = object({
-    vrrp_network = string
-    virtual_ip   = string
+    vrrp_network     = string
+    virtual_ip       = string
+    dhcp_pool_ranges = optional(list(string))
   })
 }
 
-variable "vrrp_physical_ip" {
-  type = string
-}
-
-variable "pannu_physical_interface" {
-  type = string
+variable "vrrp_interface" {
+  type = object({
+    name        = string
+    physical_ip = optional(string)
+  })
 }
 
 variable "bootstrap_script" {
   description = "Contents for the bootstrap script used with reset configuration"
   type        = string
 }
+

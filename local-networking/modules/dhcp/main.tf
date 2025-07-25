@@ -8,9 +8,11 @@ terraform {
 
 # Creates the DHCP server, bound to the specified interface.
 resource "routeros_ip_dhcp_server" "dhcp_server" {
-  name      = var.dhcp_server_name
-  interface = var.interface_name
-  disabled  = var.disabled
+  name            = var.dhcp_server_name
+  interface       = var.interface_name
+  address_pool    = length(routeros_ip_pool.dhcp_pool) > 0 ? routeros_ip_pool.dhcp_pool[0].name : null
+  disabled        = var.disabled
+  use_reconfigure = true
   lifecycle {
     ignore_changes = [disabled]
   }
@@ -21,3 +23,10 @@ resource "routeros_ip_dhcp_server_network" "dhcp_server_network" {
   gateway    = var.gateway_ip
   dns_server = var.dns_servers
 }
+
+resource "routeros_ip_pool" "dhcp_pool" {
+  count  = var.pool_ranges != null ? 1 : 0
+  name   = "vrrp-dhcp"
+  ranges = var.pool_ranges
+}
+

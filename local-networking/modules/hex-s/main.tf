@@ -6,6 +6,11 @@ terraform {
   }
 }
 
+locals {
+  vrrp_physical_ip_defined = var.vrrp_interface.physical_ip == null
+  bootstrap_script_path    = "hexS.rsc"
+}
+
 provider "routeros" {
   username = var.config.username
   password = var.config.password
@@ -13,13 +18,28 @@ provider "routeros" {
   insecure = true
 }
 
+moved {
+  from = routeros_ip_dhcp_server.bootstrap_dhcp_disable
+  to   = module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
+}
+
+data "routeros_interfaces" "local_bridge_interface" {
+  count = local.vrrp_physical_ip_defined ? 0 : 1
+  filter = {
+    name = var.vrrp_interface.name
+  }
+}
+
 module "vrrp" {
-  source               = "../vrrp"
-  interface_name       = var.pannu_physical_interface
-  physical_ip          = var.vrrp_physical_ip
-  virtual_ip           = var.vrrp_shared_config.virtual_ip
-  dhcp_network_address = var.vrrp_shared_config.vrrp_network
-  priority             = 100
+  source = "../vrrp"
+  # The VRRP instance will run on the main LAN bridge, found dynamically.
+  interface = {
+    name        = local.vrrp_physical_ip_defined ? var.vrrp_interface.name : data.routeros_interfaces.local_bridge_interface[0].interfaces[0].name
+    physical_ip = var.vrrp_interface.physical_ip
+  }
+  dhcp_server_name = "vrrp-dhcp"
+  config           = var.vrrp_shared_config
+  priority         = 100
 }
 
 
@@ -45,7 +65,7 @@ module "jetkvm_lease" {
   source             = "../static-lease"
   mac_address        = var.config.jetkvm_mac_address
   ip_address         = var.jetkvm_shared_config.ip
-  dhcp_server        = "local-bridge"
+  dhcp_server        = module.vrrp.dhcp_server_name
   hostname           = var.jetkvm_shared_config.dns_hostname
   include_subdomains = false
 }
@@ -54,7 +74,7 @@ resource "routeros_ip_dns" "dns" {
   allow_remote_requests = true
 }
 
-resource "routeros_file" "test" {
-  name     = "hexS.rsc"
-  contents = var.bootstrap_script
+resource "routeros_file" "bootstrap_script" {
+  name     = local.bootstrap_script_path
+  contents = "${var.bootstrap_script}#remove previous bootstrap script so new one can be applied\n/file/remove ${local.bootstrap_script_path}"
 }

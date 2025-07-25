@@ -23,21 +23,16 @@
 
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
-:local localBridgePorts {"ether4"; "ether5"}
-:local localIpNetwork "10.20.10.0/24"
+:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "sfp1"}
+:local localIpNetwork "10.1.1.0/24"
+:local localBridgeIpAddress "10.1.1.3"
+:local localDhcpServerName "vrrp-dhcp"
 :local localDhcpPoolStart 100
-:local localDhcpPoolEnd 200
-:local localDhcpPoolName "local-dhcp"
+:local localDhcpPoolEnd 254
+:local localDhcpPoolName "vrrp-dhcp"
 
 # --- WAN Configuration ---
 :local wanInterface "ether1"
-
-# --- (Optional) Static Peering to Parent Router ---
-# To enable, set 'peeringInterface' to a physical port (e.g. "ether2").
-:local peeringInterface "ether2"
-:local parentLanNetwork "10.10.10.0/24"
-:local childIpInLinkNetwork "10.254.254.2/30"
-:local parentIpInLinkNetwork "10.254.254.1"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -46,8 +41,8 @@
 :local localNetworkPart [:pick $localIpNetwork 0 [:find $localIpNetwork "/"]]
 :local localCidrSuffix [:pick $localIpNetwork [:find $localIpNetwork "/"] [:len $localIpNetwork]]
 :local localNetworkPrefix [:pick $localNetworkPart 0 ([:len $localNetworkPart] - 1)]
-:local localBridgeIpAddress ($localNetworkPrefix . "1")
 :local localDhcpPoolRange ($localNetworkPrefix . $localDhcpPoolStart . "-" . $localNetworkPrefix . $localDhcpPoolEnd)
+:local createLocalBridge ([:len $localBridgePorts] > 0)
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -69,7 +64,7 @@
 /interface list add name=LAN comment="bootstrap"
 # --- Local Bridge Setup ---
 # Create a bridge and DHCP server only if there are interfaces defined.
-:if ([:len $localBridgePorts] > 0) do={
+:if ($createLocalBridge) do={
   /interface bridge
     add name=$localBridgeName disabled=no protocol-mode=rstp comment="bootstrap";
 
@@ -84,7 +79,7 @@
 
   # Configure IP, DHCP, and add to LAN interface list.
   /ip pool add name=$localDhcpPoolName ranges=$localDhcpPoolRange;
-  /ip dhcp-server add name="local-bridge" address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no comment="bootstrap";
+  /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no comment="bootstrap";
   /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
   /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
@@ -99,25 +94,15 @@
 /ip dhcp-client add interface=$wanInterface disabled=no comment="bootstrap"
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
-:if ($peeringInterface != "") do={
-  /interface list add name=PEERING comment="bootstrap"
-  /ip address add address=$childIpInLinkNetwork interface=$peeringInterface comment="bootstrap: static peering"
-  /ip route add dst-address=$parentLanNetwork gateway=$parentIpInLinkNetwork comment="bootstrap: static peering"
-  /interface list member add list=PEERING interface=$peeringInterface comment="bootstrap"
-}
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
 /ip firewall {
   filter add chain=input action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
   filter add chain=input action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=input action=accept protocol=icmp comment="bootstrap: accept ICMP"
   filter add chain=input action=accept dst-address=127.0.0.1 comment="bootstrap: accept to local loopback (for CAPsMAN)"
-  :if ($peeringInterface != "") do={
-    /ip firewall filter add chain=input action=accept in-interface-list=PEERING comment="bootstrap: accept from parent"
-  }
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop all not coming from LAN"
   filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept in ipsec policy"
   filter add chain=forward action=accept ipsec-policy=out,ipsec comment="bootstrap: accept out ipsec policy"
-  filter add chain=forward action=accept in-interface-list=PEERING out-interface-list=LAN comment="bootstrap: allow forwarding from peering to LAN"
   filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related, untracked"
   filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
@@ -159,12 +144,9 @@
 }
 # --- System Services ---
 # Allow management access only from trusted interfaces.
-/interface list add name=MGMT_ALLOWED
-:if ($isLocalBridgeCreated) do={
-  /interface list member add list=MGMT_ALLOWED interface=$localBridgeName
-}
-:if ($peeringInterface != "") do={
-  /interface list member add list=MGMT_ALLOWED interface=$peeringInterface
+/interface list add name=MGMT_ALLOWED comment="bootstrap"
+:if ($createLocalBridge) do={
+  /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
 /ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
 /tool mac-server set allowed-interface-list=MGMT_ALLOWED
@@ -173,10 +155,25 @@
 :log info bootstrap_script_finished;
 :set bootstrapMode;
 
-/certificate
-add name=ca common-name=local_ca key-usage=key-cert-sign
-add name=self common-name=localhost
-sign ca
-sign self
-/ip service
-set www-ssl certificate=self disabled=no
+/certificate {
+  add name=ca common-name=local_ca key-usage=key-cert-sign
+  add name=self common-name=localhost
+  sign ca
+  sign self
+}
+
+# there seems to be some race-condition with certificate signing and the ip service www-ssl enabling
+# where the ip service doesn't always find the signed cert
+# so let's make while loop to wait for 5s to find the certifcation
+:local ms 0
+:local timeout 5000
+:while ([:len [/certificate find name="self"]] = 0 && $ms < $timeout) do={
+    :delay 500ms
+    :set ms ($ms + 500)
+}
+:if ([:len [/certificate find name="self"]] = 0) do={
+    :log error ("Timeout waiting for certificate 'self' after " . $ms . " ms")
+    :error "Timeout waiting for certificate 'self'"
+}
+:log info ("Found certificate 'self' after " . $ms . " ms")
+/ip service set www-ssl certificate=self disabled=no
