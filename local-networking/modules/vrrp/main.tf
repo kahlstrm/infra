@@ -28,20 +28,15 @@ resource "routeros_ip_address" "vrrp_virtual_ip" {
   comment   = "Terraform: VRRP virtual IP"
 }
 
-# Creates the VRRP DHCP server, bound to the virtual VRRP interface.
-resource "routeros_ip_dhcp_server" "vrrp_dhcp_server" {
-  name      = var.dhcp_server_name
-  interface = routeros_interface_vrrp.vrrp.name
-  disabled  = true
-  lifecycle {
-    ignore_changes = [disabled]
-  }
-}
-
-resource "routeros_ip_dhcp_server_network" "vrrp_dhcp_server_network" {
-  address    = var.dhcp_network_address
-  gateway    = var.virtual_ip
-  dns_server = [var.virtual_ip]
+# Creates the DHCP server using the dedicated DHCP module
+module "dhcp" {
+  source           = "../dhcp"
+  dhcp_server_name = var.dhcp_server_name
+  interface_name   = routeros_interface_vrrp.vrrp.name
+  network_address  = var.dhcp_network_address
+  gateway_ip       = var.virtual_ip
+  dns_servers      = [var.virtual_ip]
+  disabled         = true
 }
 
 # currently required for firewall rules to allow connecting to router for DNS
