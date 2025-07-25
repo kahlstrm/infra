@@ -15,48 +15,44 @@ The network is composed of two main logical networks, connected by a shared high
 
 ```mermaid
 graph TB
-    subgraph "Shared LAN (10.1.1.0/24)"
-        SWITCH[Unmanaged 2.5G Switch]
-        U7[U7 Pro AP]
-        PANNU[pannu<br/>10.1.1.10]
-        SWITCH --> U7
-        SWITCH --> PANNU
-    end
-
     subgraph "Minirack (Portable)"
         WAN1[Internet WAN 1]
-        RB5009[RB5009<br/>Main Router<br/>Minirack LAN: 10.10.10.1<br/>Shared LAN: 10.1.1.2]
+        RB5009[RB5009<br/>Main Router<br/>Minirack LAN: 10.10.10.1]
         CRS310[CRS310<br/>Switch]
         RPI5[RPi 5]
         MS01[MS-01]
         ZIMA[Zimaboard 2]
 
-        WAN1 --> RB5009
-        RB5009 -- "ether1 (2.5G)" --> SWITCH
+        WAN1 -- "ether8" --> RB5009
         RB5009 -- "10G SFP+" --> CRS310
-        CRS310 --> RPI5
-        CRS310 --> MS01
-        CRS310 --> ZIMA
+        RB5009 -- "1G PoE" --> RPI5
+        CRS310 -- "10G SFP+" --> MS01
+        CRS310 -- "2.5G" --> ZIMA
+    end
+
+    subgraph "Shared LAN (10.1.1.0/24) + VRRP Virtual Gateway"
+        VRRP[VRRP Virtual Gateway<br/>10.1.1.1]
+        SWITCH[Unmanaged 2.5G Switch]
+        U7[U7 Pro AP]
+        PANNU[pannu<br/>10.1.1.10]
+
+        VRRP --- SWITCH
+        SWITCH --> U7
+        SWITCH --> PANNU
     end
 
     subgraph "Stationary"
         WAN2[Internet WAN 2]
-        HEXS[hEX S<br/>Failover Router<br/>Shared LAN: 10.1.1.3]
+        HEXS[hEX S<br/>Failover Router]
         JETKVM[JetKVM<br/>10.1.1.11]
 
-        WAN2 --> HEXS
-        HEXS -- "LAN Bridge" --> SWITCH
-        SWITCH --> JETKVM
+        WAN2 -- "ether1" --> HEXS
+        HEXS --> JETKVM
     end
 
-
-    RB5009 -.->|VPN<br/>when separated| HEXS
-
-    subgraph "VRRP Virtual Gateway"
-        VRRP[10.1.1.1<br/>Shared Virtual IP]
-        RB5009 -.->|Priority 255| VRRP
-        HEXS -.->|Priority 100| VRRP
-    end
+    RB5009 -. "ether1 (2.5G)<br/>VRRP Priority 255<br/>10.1.1.2" .-> SWITCH
+    HEXS -- "LAN Bridge<br/>VRRP Priority 100<br/>10.1.1.3" --> SWITCH
+    RB5009 <-.->|VPN when separated| HEXS
 ```
 
 ## How It Works
@@ -67,10 +63,9 @@ This network is designed for both high performance and automatic failover using 
 
 ### Connected Mode (Normal High-Performance Operation)
 
-- **Unified Backbone**: A simple unmanaged switch creates a shared Layer 2 network (`10.1.1.0/24`). The RB5009 (via `ether1`) and the hEX S (via a bridge of its LAN ports) connect to this switch. Critical devices like `pannu` and the U7 Pro access point also connect here.
+- **Unified Backbone**: A simple unmanaged switch creates a shared Layer 2 network (`10.1.1.0/24`). The RB5009 (via `ether1`) and the hEX S (via a bridge of its LAN ports) connect to this switch. Devices like `pannu` and the U7 Pro AP connect here to get 2.5G connectivity with the Minirack network.
 - **Primary Router**: The RB5009 is the primary router (VRRP Master, priority 255) and handles all internet traffic for the shared network.
-- **High-Speed Data Path**: `pannu` connects via its 2.5G port to the unmanaged switch, allowing high-speed access to the RB5009 and other devices on the shared network.
-- **Central DHCP**: The RB5009 runs the primary DHCP server for the shared network. It provides leases to all devices, including `pannu`.
+- **Central DHCP**: The RB5009 runs the primary DHCP server for the shared network. It provides leases to all devices, including static reservations for devices like `pannu`.
 - **Backup Router (Standby)**: The hEX S is in standby (VRRP Backup, priority 100). Its dedicated DHCP server for the shared network is **disabled** by a VRRP state-change script to prevent conflicts.
 
 ### Separated Mode (Failover Operation)
