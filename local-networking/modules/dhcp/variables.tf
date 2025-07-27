@@ -42,3 +42,8 @@ variable "static_leases" {
     mac_address = string
   }))
 }
+
+variable "lease_time" {
+  description = "lease_time in time duration"
+  default     = "30m"
+}

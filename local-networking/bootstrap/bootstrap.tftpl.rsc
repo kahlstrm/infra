@@ -30,6 +30,7 @@
 :local localDhcpPoolStart ${local_dhcp_pool_start}
 :local localDhcpPoolEnd ${local_dhcp_pool_end}
 :local localDhcpPoolName "${local_dhcp_pool_name}"
+:local localDhcpServerLeaseTime ${local_dhcp_server_lease_time}
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
@@ -85,7 +86,7 @@
 
   # Configure IP, DHCP, and add to LAN interface list.
   /ip pool add name=$localDhcpPoolName ranges=$localDhcpPoolRange;
-  /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName disabled=no comment="bootstrap";
+  /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName lease-time=$localDhcpServerLeaseTime use-reconfigure=yes disabled=no comment="bootstrap";
   /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
   /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
   :if ($secondaryLocalBridgeIpAddress != "") do={

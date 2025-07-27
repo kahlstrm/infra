@@ -1,5 +1,5 @@
 output "content" {
-  description = "The rendered content of the bootstrap script."
+  description = "The rendered content of the template file."
   value       = local.content
 }
 

@@ -8,6 +8,7 @@ locals {
       local_bridge_ip_address           = local.vrrp_shared_config.virtual_ip
       secondary_local_bridge_ip_address = local.hex_s.ip
       local_dhcp_server_name            = "vrrp-dhcp"
+      local_dhcp_server_lease_time      = "1m" # this is to make clients reconfigure eagerly prior to applying terraform configuration
       local_dhcp_pool_start             = 100
       local_dhcp_pool_end               = 254
       local_dhcp_pool_name              = "vrrp-dhcp"
@@ -23,6 +24,7 @@ locals {
       local_bridge_ip_address           = "10.10.10.1"
       secondary_local_bridge_ip_address = ""
       local_dhcp_server_name            = "minirack-dhcp"
+      local_dhcp_server_lease_time      = "30m"
       local_dhcp_pool_start             = 100
       local_dhcp_pool_end               = 254
       local_dhcp_pool_name              = "minirack-dhcp"
@@ -34,9 +36,13 @@ locals {
 }
 
 module "bootstrap_script" {
-  source        = "./modules/bootstrap-script-generator"
-  for_each      = local.bootstrap_configs
-  config        = each.value
+  source   = "../modules/templatefile-generator"
+  for_each = local.bootstrap_configs
+  config = merge(each.value,
+    {
+      local_bridge_ports = join("; ", formatlist("\"%s\"", each.value.local_bridge_ports))
+    }
+  )
   filename      = "${each.key}.rsc"
   template_path = "${path.root}/bootstrap/bootstrap.tftpl.rsc"
 }

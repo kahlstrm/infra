@@ -13,6 +13,7 @@ resource "routeros_ip_dhcp_server" "dhcp_server" {
   address_pool    = length(routeros_ip_pool.dhcp_pool) > 0 ? routeros_ip_pool.dhcp_pool[0].name : null
   disabled        = var.disabled
   use_reconfigure = true
+  lease_time      = var.lease_time
   lifecycle {
     ignore_changes = [disabled]
   }
