@@ -34,3 +34,11 @@ variable "pool_ranges" {
   type        = list(string)
   nullable    = true
 }
+
+variable "static_leases" {
+  description = "Static leases for the DHCP server"
+  type = map(object({
+    ip          = string
+    mac_address = string
+  }))
+}

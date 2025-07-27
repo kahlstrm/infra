@@ -30,3 +30,9 @@ resource "routeros_ip_pool" "dhcp_pool" {
   ranges = var.pool_ranges
 }
 
+resource "routeros_ip_dhcp_server_lease" "static_lease" {
+  for_each    = var.static_leases
+  mac_address = each.value.mac_address
+  address     = each.value.ip
+  comment     = each.key
+}

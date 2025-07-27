@@ -28,7 +28,7 @@ variable "vrrp_interface" {
 }
 
 variable "vrrp_dhcp_server_name" {
-  description = "the name of the DHCP server that is setup for the VRRP interface. Must match the bootstrap script on the hEX S"
+  description = "the name of the DHCP server that is setup for the VRRP interface."
   type        = string
 }
 

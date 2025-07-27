@@ -19,28 +19,28 @@
 #                          USER-CONFIGURABLE PARAMETERS
 # ------------------------------------------------------------------------------
 # --- System Identity ---
-:local systemIdentity "hex-s"
+:local systemIdentity "rb5009"
 
 # --- Local LAN Configuration ---
-:local localBridgeName "local-bridge"
-:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"}
-:local localIpNetwork "10.1.1.0/24"
-:local localBridgeIpAddress "10.1.1.1"
+:local localBridgeName "minirack-bridge"
+:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "ether6"; "ether7"; "sfp-sfpplus1"}
+:local localIpNetwork "10.10.10.0/24"
+:local localBridgeIpAddress "10.10.10.1"
 # optional, leave empty if don't want secondary bridge IP
-:local secondaryLocalBridgeIpAddress "10.1.1.3"
-:local localDhcpServerName "vrrp-dhcp"
+:local secondaryLocalBridgeIpAddress ""
+:local localDhcpServerName "minirack-dhcp"
 :local localDhcpPoolStart 100
 :local localDhcpPoolEnd 254
-:local localDhcpPoolName "vrrp-dhcp"
+:local localDhcpPoolName "minirack-dhcp"
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
 # Optional set sharedLanInterface empty to disable
-:local sharedLanInterface ""
-:local sharedLanIpAddressNetwork ""
+:local sharedLanInterface "ether1"
+:local sharedLanIpAddressNetwork "10.1.1.2/24"
 
 # --- WAN Configuration ---
-:local wanInterface "ether1"
+:local wanInterface "ether8"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

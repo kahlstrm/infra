@@ -6,13 +6,6 @@ terraform {
   }
 }
 
-
-moved {
-  from = routeros_ip_dhcp_server.bootstrap_dhcp_disable
-  to   = module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
-}
-
-
 module "vrrp" {
   source = "../vrrp"
   # The VRRP instance will run on the main LAN bridge, found dynamically.
@@ -31,4 +24,3 @@ resource "routeros_file" "bootstrap_script" {
   name     = var.config.bootstrap_script_filename
   contents = var.config.bootstrap_script
 }
-

@@ -1,10 +1,8 @@
 variable "interface" {
-  type = object({
-    name        = string
-    physical_ip = optional(string)
-  })
-
+  description = "name of the interface where to setup the VRRP on top of."
+  type        = string
 }
+
 variable "config" {
   type = object({
     vrrp_network     = string
@@ -27,6 +25,14 @@ variable "vrrp_name" {
 variable "dhcp_server_name" {
   description = "The name for the failover DHCP server."
   type        = string
+}
+
+variable "static_leases" {
+  description = "Static leases for the DHCP server"
+  type = map(object({
+    ip          = string
+    mac_address = string
+  }))
 }
 
 variable "lan_interface_list_name" {

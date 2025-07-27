@@ -1,46 +1,71 @@
 locals {
-  pannu_shared_config = {
-    ip           = "10.1.1.10"
-    dns_hostname = "p.kalski.xyz"
-    mac_address  = local.config["pannu_mac_address"]
-  }
-  jetkvm_shared_config = {
-    ip           = "10.1.1.11"
-    dns_hostname = "jetkvm.kalski.xyz"
-    mac_address  = local.config["jetkvm_mac_address"]
-  }
-  argon_pi_shared_config = {
-    ip           = "10.1.1.20"
-    dns_hostname = "argon.kalski.xyz"
-    mac_address  = local.config["argon_pi_mac_address"]
-  }
   vrrp_shared_config = {
     vrrp_network     = "10.1.1.0/24"
     virtual_ip       = "10.1.1.1"
     dhcp_pool_ranges = ["10.1.1.100-10.1.1.254"]
   }
+  vrrp_lan_static_leases_and_records = {
+    "p.kalski.xyz" = {
+      ip                = "10.1.1.10"
+      mac_address       = local.config["pannu_mac_address"]
+      include_subdomain = true
+    },
+    "jet.kalski.xyz" = {
+      ip          = "10.1.1.11"
+      mac_address = local.config["jetkvm_mac_address"]
+    },
+    "unifi.kalski.xyz" = {
+      ip          = "10.1.1.20"
+      mac_address = local.config["unifi_pi_mac_address"]
+    }
+  }
+  rb5009_lan_static_leases_and_records = {
+  }
   hex_s = {
     ip                        = "10.1.1.3"
     bootstrap_script          = file("${path.root}/bootstrap/hexS.rsc")
     bootstrap_script_filename = "hexS.rsc"
+    vrrp_priority             = 100
   }
+  rb5009 = {
+    ip                        = "10.1.1.2"
+    bootstrap_script          = file("${path.root}/bootstrap/rb5009.rsc")
+    bootstrap_script_filename = "rb5009.rsc"
+    vrrp_priority             = 254
+  }
+  minirack = {
+    network = "10.10.10.0/24"
+  }
+}
+locals {
+  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.rb5009_lan_static_leases_and_records)
 }
 
 
 module "hex_s" {
-  source               = "./modules/hex-s"
-  config               = local.hex_s
-  vrrp_shared_config   = local.vrrp_shared_config
-  pannu_shared_config  = local.pannu_shared_config
-  jetkvm_shared_config = local.jetkvm_shared_config
-  vrrp_interface = {
-    name = "local-bridge"
-  }
-  vrrp_dhcp_server_name  = "vrrp-dhcp"
-  argon_pi_shared_config = local.argon_pi_shared_config
+  source = "./modules/hex-s"
   providers = {
     routeros = routeros.hex-s
   }
+  config                 = local.hex_s
+  vrrp_shared_config     = local.vrrp_shared_config
+  vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
+  vrrp_interface         = "local-bridge"
+  vrrp_dhcp_server_name  = "vrrp-dhcp"
+  dns_a_records          = merge(local.vrrp_lan_static_leases_and_records)
+}
+
+module "rb5009" {
+  source = "./modules/rb5009"
+  providers = {
+    routeros = routeros.rb5009
+  }
+  config                 = local.rb5009
+  vrrp_shared_config     = local.vrrp_shared_config
+  vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
+  vrrp_interface         = "ether1"
+  vrrp_dhcp_server_name  = "vrrp-dhcp"
+  dns_a_records          = merge(local.vrrp_lan_static_leases_and_records)
 }
 
 # imports the bootstrap dhcp server and network created in the bootstrap-script to state so that we can hijack
@@ -82,5 +107,18 @@ data "routeros_files" "hexS" {
 import {
   for_each = data.routeros_files.hexS.files
   to       = module.hex_s.routeros_file.bootstrap_script
+  id       = each.value.id
+}
+
+data "routeros_files" "rb5009" {
+  provider = routeros.rb5009
+  filter = {
+    name = local.rb5009.bootstrap_script_filename
+  }
+}
+
+import {
+  for_each = data.routeros_files.rb5009.files
+  to       = module.rb5009.routeros_file.bootstrap_script
   id       = each.value.id
 }

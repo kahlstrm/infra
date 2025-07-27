@@ -5,23 +5,16 @@ terraform {
     }
   }
 }
-# Creates a physical IP on the specified interface.
-resource "routeros_ip_address" "vrrp_physical_ip" {
-  count     = var.interface.physical_ip == null ? 0 : 1
-  address   = var.interface.physical_ip
-  interface = var.interface.name
-  comment   = "Terraform: VRRP physical IP"
-}
 
 # Creates the VRRP virtual interface.
 resource "routeros_interface_vrrp" "vrrp" {
   name            = var.vrrp_name
-  interface       = var.interface.name
+  interface       = var.interface
   priority        = var.priority
   preemption_mode = true
-  # TODO: check if this is required or not
-  # on_master       = "/ip dhcp-server enable [find name=${var.dhcp_server_name}]"
-  # on_backup       = "/ip dhcp-server disable [find name=${var.dhcp_server_name}]"
+  # do this to clean the lease table on backup
+  on_master = "/ip dhcp-server enable [find name=${var.dhcp_server_name}]"
+  on_backup = "/ip dhcp-server disable [find name=${var.dhcp_server_name}]"
 }
 
 # Creates the virtual IP with a /32 mask and assigns it to the VRRP interface.
@@ -40,7 +33,7 @@ module "dhcp" {
   gateway_ip       = var.config.virtual_ip
   dns_servers      = [var.config.virtual_ip]
   pool_ranges      = var.config.dhcp_pool_ranges
-  # disabled         = true
+  static_leases    = var.static_leases
 }
 
 # currently required for firewall rules to allow connecting to router for DNS

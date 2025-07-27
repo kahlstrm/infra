@@ -80,7 +80,7 @@ This network is designed for both high performance and automatic failover using 
 VRRP handles automatic failover between routers on the shared `10.1.1.0/24` network:
 
 - **Virtual IP**: `10.1.1.1` (gateway for all devices on the shared network)
-- **RB5009**: Priority 255 (master when connected)
+- **RB5009**: Priority 254 (master when connected)
 - **hEX S**: Priority 100 (backup, becomes master when RB5009 unavailable)
 
 ## VPN
@@ -128,15 +128,14 @@ To bootstrap a new MikroTik device and integrate it into the Terraform-managed n
   - [x] VRRP setup for failover
   - [ ] Firewall rules
 - [ ] Implement minirack module (RB5009 + CRS310)
-  - [ ] RB5009 minimal bootstrap script
+  - [x] RB5009 minimal bootstrap script
+  - [x] RB5009 basic network configuration
+  - [x] RB5009 VRRP setup (master role)
   - [ ] CRS310 minimal bootstrap script (basic Layer 2 switch)
-  - [ ] RB5009 basic network configuration
-  - [ ] RB5009 VRRP setup (master role)
   - [ ] RB5009 firewall rules
   - [ ] CRS310 basic switch configuration
 - [ ] DNS and Peer Configuration
   - [ ] Set system identity for each router
-  - [ ] Configure peer DNS resolution between routers
   - [ ] Add authoritative DNS records for all devices (routers, pannu, JetKVM)
 - [ ] VPN configuration
   - [ ] Choose between WireGuard and ZeroTier
