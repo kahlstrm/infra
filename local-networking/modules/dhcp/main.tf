@@ -35,4 +35,5 @@ resource "routeros_ip_dhcp_server_lease" "static_lease" {
   mac_address = each.value.mac_address
   address     = each.value.ip
   comment     = each.key
+  server      = routeros_ip_dhcp_server.dhcp_server.name
 }
