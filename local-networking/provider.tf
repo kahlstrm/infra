@@ -8,6 +8,10 @@ terraform {
       source  = "terraform-routeros/routeros"
       version = "~> 1.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
   }
 }
 

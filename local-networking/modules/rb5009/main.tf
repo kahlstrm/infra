@@ -21,6 +21,6 @@ module "dns" {
 }
 
 resource "routeros_file" "bootstrap_script" {
-  name     = var.config.bootstrap_script_filename
-  contents = var.config.bootstrap_script
+  name     = var.bootstrap_script.filename
+  contents = var.bootstrap_script.content
 }

@@ -1,14 +1,8 @@
 # -----------------------------------------------------------------------------
-#               GENERIC MIKROTIK BOOTSTRAP SCRIPT
+#               GENERIC MIKROTIK BOOTSTRAP SCRIPT TEMPLATE
 # -----------------------------------------------------------------------------
 # This is a generic bootstrap script for RouterOS devices. Its purpose is to
 # configure a device just enough to be managed by Terraform.
-#
-# All device-specific configuration should be done in the
-# 'USER-CONFIGURABLE PARAMETERS' section below.
-#
-# DO NOT EDIT THE SCRIPT BODY for a single device. If changes are needed,
-# they should be reflected across all other router scripts of a similar pattern.
 # -----------------------------------------------------------------------------
 
 :global bootstrapMode;

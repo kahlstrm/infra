@@ -1,15 +1,13 @@
 # -----------------------------------------------------------------------------
-#               GENERIC MIKROTIK BOOTSTRAP SCRIPT
+#               GENERIC MIKROTIK BOOTSTRAP SCRIPT TEMPLATE
 # -----------------------------------------------------------------------------
 # This is a generic bootstrap script for RouterOS devices. Its purpose is to
 # configure a device just enough to be managed by Terraform.
-#
-# All device-specific configuration should be done in the
-# 'USER-CONFIGURABLE PARAMETERS' section below.
-#
-# DO NOT EDIT THE SCRIPT BODY for a single device. If changes are needed,
-# they should be reflected across all other router scripts of a similar pattern.
-# -----------------------------------------------------------------------------
+%{if false}
+# THIS IS NOT VALID RouterOS Script, this is a terraform templatefile that will be used
+# to generate valid files under generated/ and automatically uploaded to the approriate device
+# during terraform apply
+%{ endif }# -----------------------------------------------------------------------------
 
 :global bootstrapMode;
 :global isLocalBridgeCreated false;
@@ -19,28 +17,28 @@
 #                          USER-CONFIGURABLE PARAMETERS
 # ------------------------------------------------------------------------------
 # --- System Identity ---
-:local systemIdentity "rb5009"
+:local systemIdentity "${system_identity}"
 
 # --- Local LAN Configuration ---
-:local localBridgeName "minirack-bridge"
-:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "ether6"; "ether7"; "sfp-sfpplus1"}
-:local localIpNetwork "10.10.10.0/24"
-:local localBridgeIpAddress "10.10.10.1"
+:local localBridgeName "${local_bridge_name}"
+:local localBridgePorts {${local_bridge_ports}}
+:local localIpNetwork "${local_ip_network}"
+:local localBridgeIpAddress "${local_bridge_ip_address}"
 # optional, leave empty if don't want secondary bridge IP
-:local secondaryLocalBridgeIpAddress ""
-:local localDhcpServerName "minirack-dhcp"
-:local localDhcpPoolStart 100
-:local localDhcpPoolEnd 254
-:local localDhcpPoolName "minirack-dhcp"
+:local secondaryLocalBridgeIpAddress "${secondary_local_bridge_ip_address}"
+:local localDhcpServerName "${local_dhcp_server_name}"
+:local localDhcpPoolStart ${local_dhcp_pool_start}
+:local localDhcpPoolEnd ${local_dhcp_pool_end}
+:local localDhcpPoolName "${local_dhcp_pool_name}"
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
 # Optional set sharedLanInterface empty to disable
-:local sharedLanInterface "ether1"
-:local sharedLanIpAddressNetwork "10.1.1.2/24"
+:local sharedLanInterface "${shared_lan_interface}"
+:local sharedLanIpAddressNetwork "${shared_lan_ip_address_network}"
 
 # --- WAN Configuration ---
-:local wanInterface "ether8"
+:local wanInterface "${wan_interface}"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

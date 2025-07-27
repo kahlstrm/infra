@@ -1,3 +1,5 @@
+
+
 locals {
   vrrp_shared_config = {
     vrrp_network     = "10.1.1.0/24"
@@ -21,17 +23,23 @@ locals {
   }
   rb5009_lan_static_leases_and_records = {
   }
+  configs = {
+    hex_s = {
+      ip            = "10.1.1.3"
+      vrrp_priority = 100
+    }
+    rb5009 = {
+      ip            = "10.1.1.2"
+      vrrp_priority = 254
+    }
+  }
   hex_s = {
-    ip                        = "10.1.1.3"
-    bootstrap_script          = file("${path.root}/bootstrap/hexS.rsc")
-    bootstrap_script_filename = "hexS.rsc"
-    vrrp_priority             = 100
+    ip            = "10.1.1.3"
+    vrrp_priority = 100
   }
   rb5009 = {
-    ip                        = "10.1.1.2"
-    bootstrap_script          = file("${path.root}/bootstrap/rb5009.rsc")
-    bootstrap_script_filename = "rb5009.rsc"
-    vrrp_priority             = 254
+    ip            = "10.1.1.2"
+    vrrp_priority = 254
   }
   minirack = {
     network = "10.10.10.0/24"
@@ -47,6 +55,7 @@ module "hex_s" {
   providers = {
     routeros = routeros.hex-s
   }
+  bootstrap_script       = module.bootstrap_script["hex_s"]
   config                 = local.hex_s
   vrrp_shared_config     = local.vrrp_shared_config
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
@@ -60,6 +69,7 @@ module "rb5009" {
   providers = {
     routeros = routeros.rb5009
   }
+  bootstrap_script       = module.bootstrap_script["rb5009"]
   config                 = local.rb5009
   vrrp_shared_config     = local.vrrp_shared_config
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
@@ -96,29 +106,3 @@ import {
   id = "*1"
 }
 
-
-data "routeros_files" "hexS" {
-  provider = routeros.hex-s
-  filter = {
-    name = local.hex_s.bootstrap_script_filename
-  }
-}
-
-import {
-  for_each = data.routeros_files.hexS.files
-  to       = module.hex_s.routeros_file.bootstrap_script
-  id       = each.value.id
-}
-
-data "routeros_files" "rb5009" {
-  provider = routeros.rb5009
-  filter = {
-    name = local.rb5009.bootstrap_script_filename
-  }
-}
-
-import {
-  for_each = data.routeros_files.rb5009.files
-  to       = module.rb5009.routeros_file.bootstrap_script
-  id       = each.value.id
-}

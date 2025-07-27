@@ -1,9 +1,14 @@
 variable "config" {
   type = object({
-    ip                        = string
-    bootstrap_script          = string
-    bootstrap_script_filename = string
-    vrrp_priority             = number
+    ip            = string
+    vrrp_priority = number
+  })
+}
+
+variable "bootstrap_script" {
+  type = object({
+    filename = string
+    content  = string
   })
 }
 

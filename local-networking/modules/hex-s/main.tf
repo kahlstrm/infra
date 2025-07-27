@@ -22,13 +22,14 @@ module "vrrp" {
   priority         = var.config["vrrp_priority"]
   static_leases    = var.vrrp_lan_static_leases
 }
+
 module "dns" {
   source    = "../dns"
   a_records = var.dns_a_records
 }
 
 resource "routeros_file" "bootstrap_script" {
-  name     = var.config.bootstrap_script_filename
-  contents = var.config.bootstrap_script
+  name     = var.bootstrap_script.filename
+  contents = var.bootstrap_script.content
 }
 
