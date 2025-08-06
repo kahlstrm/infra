@@ -40,7 +40,6 @@ variable "vrrp_dhcp_server_name" {
 variable "dns_a_records" {
   type = map(object({
     ip                = string
-    mac_address       = string
     include_subdomain = optional(bool)
   }))
 }

@@ -15,6 +15,7 @@ locals {
       shared_lan_interface              = ""
       shared_lan_ip_address_network     = ""
       wan_interface                     = "ether1"
+      install_zerotier                  = true
     }
     "rb5009" = {
       system_identity                   = "rb5009"
@@ -29,8 +30,9 @@ locals {
       local_dhcp_pool_end               = 254
       local_dhcp_pool_name              = "minirack-dhcp"
       shared_lan_interface              = "ether1"
-      shared_lan_ip_address_network     = "${local.rb5009.ip}/24"
+      shared_lan_ip_address_network     = "${local.rb5009.shared_lan_ip}/24"
       wan_interface                     = "ether8"
+      install_zerotier                  = true
     }
   }
 }

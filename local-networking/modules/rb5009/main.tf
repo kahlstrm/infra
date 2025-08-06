@@ -9,7 +9,7 @@ terraform {
 module "vrrp" {
   source = "../vrrp"
   # The VRRP instance will run on the main LAN bridge, found dynamically.
-  interface        = var.vrrp_interface
+  interface        = var.config.vrrp_interface
   dhcp_server_name = var.vrrp_dhcp_server_name
   config           = var.vrrp_shared_config
   priority         = var.config["vrrp_priority"]

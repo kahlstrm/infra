@@ -146,11 +146,28 @@ To bootstrap a new MikroTik device or to update an existing one with the latest 
 - [x] DNS and Peer Configuration
   - [x] Set system identity for each router
   - [x] Add authoritative DNS records for all devices (pannu, JetKVM)
-- [ ] VPN configuration
-  - [ ] Choose between WireGuard and ZeroTier
-  - [ ] Site-to-site tunnel configuration
-  - [ ] Routing between sites when separated
-- [ ] Testing and validation
-  - [ ] Test failover scenarios
-  - [ ] Test lift and shift functionality
-  - [ ] Performance testing
+- [x] VPN configuration
+  - [x] ZeroTier site-to-site tunnel configuration
+  - [x] Routing between sites when separated (fallback routes with proper metrics)
+  - [x] Management access via ZeroTier tunnel
+- [x] Testing and validation
+  - [x] Test failover scenarios (~16-17 second convergence time)
+  - [x] Performance testing (~50Mbps through ZeroTier tunnel)
+
+## Important Notes
+
+### hEX S Device Mode Restriction
+
+The hEX S has a device-mode security feature that blocks certain packages like ZeroTier by default. If ZeroTier fails to start on the hEX S, you need to:
+
+1. **Enable ZeroTier in device mode**:
+
+   ```
+   /system device-mode update zerotier=yes
+   ```
+
+2. **Physically press the MODE button** on the hEX S device to confirm the change
+
+3. **Reboot the device** for the change to take effect
+
+Without this step, ZeroTier instances will fail to start on the hEX S with device-mode related errors.

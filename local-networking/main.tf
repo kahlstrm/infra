@@ -16,30 +16,32 @@ locals {
       ip          = "10.1.1.11"
       mac_address = local.config["jetkvm_mac_address"]
     },
-    "unifi.kalski.xyz" = {
+    "ha.kalski.xyz" = {
       ip          = "10.1.1.20"
-      mac_address = local.config["unifi_pi_mac_address"]
+      mac_address = local.config["ha_pi_mac_address"]
     }
   }
   rb5009_lan_static_leases_and_records = {
-  }
-  configs = {
-    hex_s = {
-      ip            = "10.1.1.3"
-      vrrp_priority = 100
+    "c1.k8s.kalski.xyz" = {
+      ip          = "10.10.10.11"
+      mac_address = local.config["c1_k8s_mac_address"]
     }
-    rb5009 = {
-      ip            = "10.1.1.2"
-      vrrp_priority = 254
+    "w1.k8s.kalski.xyz" = {
+      ip          = "10.10.10.21"
+      mac_address = local.config["w1_k8s_mac_address"]
     }
   }
   hex_s = {
     ip            = "10.1.1.3"
     vrrp_priority = 100
+    zerotier_ip   = "10.255.255.2"
   }
   rb5009 = {
-    ip            = "10.1.1.2"
-    vrrp_priority = 254
+    shared_lan_ip  = "10.1.1.2"
+    ip             = "10.10.10.1"
+    vrrp_priority  = 254
+    vrrp_interface = "ether1"
+    zerotier_ip    = "10.255.255.1"
   }
   minirack = {
     network = "10.10.10.0/24"
@@ -61,7 +63,25 @@ module "hex_s" {
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
   vrrp_interface         = "local-bridge"
   vrrp_dhcp_server_name  = "vrrp-dhcp"
-  dns_a_records          = merge(local.vrrp_lan_static_leases_and_records)
+  dns_a_records          = local.dns_a_record
+}
+
+module "zerotier" {
+  source = "./modules/zerotier"
+  providers = {
+    routeros.hex-s  = routeros.hex-s
+    routeros.rb5009 = routeros.rb5009
+    zerotier        = zerotier
+  }
+  hex_s = {
+    internal_ip = local.hex_s.ip
+    zerotier_ip = local.hex_s.zerotier_ip
+  }
+  rb5009 = {
+    internal_ip    = local.rb5009.ip
+    zerotier_ip    = local.rb5009.zerotier_ip
+    vrrp_interface = local.rb5009.vrrp_interface
+  }
 }
 
 module "rb5009" {
@@ -73,9 +93,8 @@ module "rb5009" {
   config                 = local.rb5009
   vrrp_shared_config     = local.vrrp_shared_config
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-  vrrp_interface         = "ether1"
   vrrp_dhcp_server_name  = "vrrp-dhcp"
-  dns_a_records          = merge(local.vrrp_lan_static_leases_and_records)
+  dns_a_records          = local.dns_a_record
 }
 
 # imports the bootstrap dhcp server and network created in the bootstrap-script to state so that we can hijack

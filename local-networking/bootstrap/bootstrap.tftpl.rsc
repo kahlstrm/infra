@@ -196,3 +196,22 @@
 }
 :log info ("Found certificate 'self' after " . $ms . " ms")
 /ip service set www-ssl certificate=self disabled=no
+%{if install_zerotier}
+# --- ZeroTier Installation ---
+# Check if the ZeroTier package is installed and enabled. If not, find and install it.
+# The device will reboot automatically to apply the changes.
+:if ([/system package print count-only where name="zerotier" and disabled=no] > 0) do={
+  :log info "ZeroTier package is already installed and enabled.";
+} else={
+  :log info "ZeroTier package not found or is disabled; attempting to install.";
+  /system package update check-for-updates;
+  :delay 5s;
+  :if ([/system package print count-only where name="zerotier"] > 0) do={
+      :log info "Found ZeroTier package, enabling it now.";
+      /system package enable zerotier;
+      :log info "Rebooting to apply package changes.";
+      :execute script="/system package apply-changes"
+  } else={
+      :log warning "Could not find ZeroTier package after checking for updates.";
+  }
+}%{ endif }
