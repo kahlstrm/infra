@@ -24,8 +24,9 @@ module "vrrp" {
 }
 
 module "dns" {
-  source    = "../dns"
-  a_records = var.dns_a_records
+  source     = "../dns"
+  a_records  = var.dns_a_records
+  use_adlist = true
 }
 
 resource "routeros_file" "bootstrap_script" {

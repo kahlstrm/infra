@@ -16,8 +16,9 @@ module "vrrp" {
   static_leases    = var.vrrp_lan_static_leases
 }
 module "dns" {
-  source    = "../dns"
-  a_records = var.dns_a_records
+  source     = "../dns"
+  a_records  = var.dns_a_records
+  use_adlist = true
 }
 
 resource "routeros_file" "bootstrap_script" {
