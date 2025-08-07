@@ -22,16 +22,24 @@ locals {
       mac_address = local.config["ha_pi_mac_address"]
     }
   }
-  rb5009_lan_static_leases_and_records = {
+  k8s_control_plane_nodes = {
     "c1.k8s.kalski.xyz" = {
       ip          = "10.10.10.11"
       mac_address = local.config["c1_k8s_mac_address"]
     }
+  }
+
+  k8s_worker_nodes = {
     "w1.k8s.kalski.xyz" = {
       ip          = "10.10.10.21"
       mac_address = local.config["w1_k8s_mac_address"]
     }
   }
+
+  rb5009_lan_static_leases_and_records = merge(
+    local.k8s_control_plane_nodes,
+    local.k8s_worker_nodes
+  )
   hex_s = {
     ip            = "10.1.1.3"
     vrrp_priority = 100

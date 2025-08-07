@@ -9,6 +9,8 @@ pkgs.mkShellNoCC {
     jq
     vim
     just
+    talosctl
+    kubectl
   ];
   shellHook = ''
     alias terraform=tofu
