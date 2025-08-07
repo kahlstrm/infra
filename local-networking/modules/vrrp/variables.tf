@@ -8,6 +8,7 @@ variable "config" {
     vrrp_network     = string
     virtual_ip       = string
     dhcp_pool_ranges = optional(list(string))
+    dhcp_server_name = string
   })
 }
 
@@ -20,11 +21,6 @@ variable "vrrp_name" {
   description = "The name for the VRRP interface."
   type        = string
   default     = "vrrp-lan"
-}
-
-variable "dhcp_server_name" {
-  description = "The name for the failover DHCP server."
-  type        = string
 }
 
 variable "static_leases" {

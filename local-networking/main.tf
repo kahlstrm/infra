@@ -5,6 +5,7 @@ locals {
     vrrp_network     = "10.1.1.0/24"
     virtual_ip       = "10.1.1.1"
     dhcp_pool_ranges = ["10.1.1.100-10.1.1.254"]
+    dhcp_server_name = "vrrp-dhcp"
   }
   vrrp_lan_static_leases_and_records = {
     "p.kalski.xyz" = {
@@ -62,7 +63,6 @@ module "hex_s" {
   vrrp_shared_config     = local.vrrp_shared_config
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
   vrrp_interface         = "local-bridge"
-  vrrp_dhcp_server_name  = "vrrp-dhcp"
   dns_a_records          = local.dns_a_record
 }
 
@@ -93,7 +93,8 @@ module "rb5009" {
   config                 = local.rb5009
   vrrp_shared_config     = local.vrrp_shared_config
   vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-  vrrp_dhcp_server_name  = "vrrp-dhcp"
+  lan_static_leases      = local.rb5009_lan_static_leases_and_records
+  lan_dhcp_server_name   = local.bootstrap_configs.rb5009.local_dhcp_server_name
   dns_a_records          = local.dns_a_record
 }
 

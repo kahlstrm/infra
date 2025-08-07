@@ -7,7 +7,7 @@ locals {
       local_ip_network                  = local.vrrp_shared_config.vrrp_network
       local_bridge_ip_address           = local.vrrp_shared_config.virtual_ip
       secondary_local_bridge_ip_address = local.hex_s.ip
-      local_dhcp_server_name            = "vrrp-dhcp"
+      local_dhcp_server_name            = local.vrrp_shared_config.dhcp_server_name
       local_dhcp_server_lease_time      = "1m" # this is to make clients reconfigure eagerly prior to applying terraform configuration
       local_dhcp_pool_start             = 100
       local_dhcp_pool_end               = 254

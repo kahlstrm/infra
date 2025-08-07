@@ -153,6 +153,8 @@ To bootstrap a new MikroTik device or to update an existing one with the latest 
 - [x] Testing and validation
   - [x] Test failover scenarios (~16-17 second convergence time)
   - [x] Performance testing (~50Mbps through ZeroTier tunnel)
+- [ ] Refactoring
+  - [ ] move DHCP servers to terraform, with initial config being done with static IP configuration
 
 ## Important Notes
 

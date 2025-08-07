@@ -24,16 +24,12 @@ variable "vrrp_shared_config" {
     vrrp_network     = string
     virtual_ip       = string
     dhcp_pool_ranges = optional(list(string))
+    dhcp_server_name = string
   })
 }
 
 variable "vrrp_interface" {
   description = "name of the interface for the VRRP to be setup on top of"
-  type        = string
-}
-
-variable "vrrp_dhcp_server_name" {
-  description = "the name of the DHCP server that is setup for the VRRP interface. Must match the bootstrap script on the hEX S"
   type        = string
 }
 

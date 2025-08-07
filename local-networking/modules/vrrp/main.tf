@@ -13,8 +13,8 @@ resource "routeros_interface_vrrp" "vrrp" {
   priority        = var.priority
   preemption_mode = true
   # do this to clean the lease table on backup
-  on_master = "/ip dhcp-server enable [find name=${var.dhcp_server_name}]"
-  on_backup = "/ip dhcp-server disable [find name=${var.dhcp_server_name}]"
+  on_master = "/ip dhcp-server enable [find name=${var.config.dhcp_server_name}]"
+  on_backup = "/ip dhcp-server disable [find name=${var.config.dhcp_server_name}]"
 }
 
 # Creates the virtual IP with a /32 mask and assigns it to the VRRP interface.
@@ -27,7 +27,7 @@ resource "routeros_ip_address" "vrrp_virtual_ip" {
 # Creates the DHCP server using the dedicated DHCP module
 module "dhcp" {
   source           = "../dhcp"
-  dhcp_server_name = var.dhcp_server_name
+  dhcp_server_name = var.config.dhcp_server_name
   interface_name   = routeros_interface_vrrp.vrrp.name
   network_address  = var.config.vrrp_network
   gateway_ip       = var.config.virtual_ip
