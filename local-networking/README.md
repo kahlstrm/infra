@@ -50,7 +50,7 @@ graph TB
         HEXS --> JETKVM
     end
 
-    RB5009 -. "ether1 (2.5G)<br/>VRRP Priority 255<br/>10.1.1.2" .-> SWITCH
+    RB5009 -. "ether1 (2.5G)<br/>VRRP Priority 254<br/>10.1.1.2" .-> SWITCH
     HEXS -- "LAN Bridge<br/>VRRP Priority 100<br/>10.1.1.3" --> SWITCH
     RB5009 <-.->|VPN when separated| HEXS
 ```
