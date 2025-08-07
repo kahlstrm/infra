@@ -99,6 +99,19 @@
   /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
+#
+# --- System Services ---
+# Allow management access only from trusted interfaces.
+/interface list add name=MGMT_ALLOWED comment="bootstrap"
+:if ($createLocalBridge) do={
+  /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
+}
+:if ($sharedLanInterface != "") do={
+  /interface list member add list=MGMT_ALLOWED interface=$sharedLanInterface comment="bootstrap"
+}
+/ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
+/tool mac-server set allowed-interface-list=MGMT_ALLOWED
+/tool mac-server mac-winbox set allowed-interface-list=MGMT_ALLOWED
 
 # --- Global Services ---
 # Enable DNS and configure a DHCP client on the WAN interface.
@@ -112,6 +125,7 @@
   filter add chain=input action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=input action=accept protocol=icmp comment="bootstrap: accept ICMP"
   filter add chain=input action=accept dst-address=127.0.0.1 comment="bootstrap: accept to local loopback (for CAPsMAN)"
+  filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop all not coming from LAN"
   filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept in ipsec policy"
   filter add chain=forward action=accept ipsec-policy=out,ipsec comment="bootstrap: accept out ipsec policy"
@@ -139,6 +153,7 @@
   filter add chain=input action=accept protocol=ipsec-ah comment="bootstrap: accept ipsec AH"
   filter add chain=input action=accept protocol=ipsec-esp comment="bootstrap: accept ipsec ESP"
   filter add chain=input action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
+  filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
   filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack6"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
@@ -154,18 +169,6 @@
   filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
   filter add chain=forward action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
 }
-# --- System Services ---
-# Allow management access only from trusted interfaces.
-/interface list add name=MGMT_ALLOWED comment="bootstrap"
-:if ($createLocalBridge) do={
-  /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
-}
-:if ($sharedLanInterface != "") do={
-  /interface list member add list=MGMT_ALLOWED interface=$sharedLanInterface comment="bootstrap"
-}
-/ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
-/tool mac-server set allowed-interface-list=MGMT_ALLOWED
-/tool mac-server mac-winbox set allowed-interface-list=MGMT_ALLOWED
 
 :log info bootstrap_script_finished;
 :set bootstrapMode;
