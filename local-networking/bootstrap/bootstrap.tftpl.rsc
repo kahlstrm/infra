@@ -103,6 +103,14 @@
   /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
+
+%{ if length(management_routes) > 0 ~}
+# --- Management Routes ---
+# Routes to reach other routers' management networks during bootstrap
+%{ for route in management_routes ~}
+/ip route add dst-address=${route.destination} gateway=${route.gateway} distance=${route.distance} comment="bootstrap: ${route.comment}"
+%{ endfor ~}
+%{ endif ~}
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.

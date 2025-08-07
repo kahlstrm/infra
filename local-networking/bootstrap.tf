@@ -16,6 +16,14 @@ locals {
       shared_lan_ip_address_network     = ""
       wan_interface                     = "ether1"
       install_zerotier                  = true
+      management_routes = [
+        {
+          destination = "10.10.10.0/24"
+          gateway     = local.rb5009.shared_lan_ip
+          distance    = 255
+          comment     = "route to RB5009 minirack for management"
+        }
+      ]
     }
     "rb5009" = {
       system_identity                   = "rb5009"
@@ -33,6 +41,7 @@ locals {
       shared_lan_ip_address_network     = "${local.rb5009.shared_lan_ip}/24"
       wan_interface                     = "ether8"
       install_zerotier                  = true
+      management_routes                 = []
     }
   }
 }

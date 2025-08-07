@@ -99,6 +99,10 @@
   /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
+
+# --- Management Routes ---
+# Routes to reach other routers' management networks during bootstrap
+/ip route add dst-address=10.10.10.0/24 gateway=10.1.1.2 distance=255 comment="bootstrap: route to RB5009 minirack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.

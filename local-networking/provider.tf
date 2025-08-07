@@ -34,7 +34,7 @@ provider "routeros" {
 
 provider "routeros" {
   alias    = "rb5009"
-  hosturl  = local.rb5009.shared_lan_ip
+  hosturl  = local.rb5009.ip
   username = local.config["rb5009"]["username"]
   password = local.config["rb5009"]["password"]
   insecure = true

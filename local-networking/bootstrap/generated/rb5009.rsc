@@ -99,6 +99,7 @@
   /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
+
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
