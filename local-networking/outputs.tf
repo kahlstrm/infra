@@ -12,11 +12,7 @@ output "k8s_workers" {
   } }
 }
 
-output "cluster_config" {
-  description = "Kubernetes cluster configuration"
-  value = {
-    cluster_endpoint = "https://${values(local.k8s_control_plane_nodes)[0].ip}:6443"
-    network          = local.minirack.network
-  }
+output "cluster_network" {
+  description = "Kubernetes cluster network"
+  value       = local.minirack.network
 }
-
