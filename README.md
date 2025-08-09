@@ -28,13 +28,32 @@ This repository is an experimental playground for managing a personal hardware s
 - [Nix](https://nixos.org/)
 - [Just](https://github.com/casey/just)
 
+## Architecture
+
+This infrastructure uses a **layered approach**:
+
+1. **`local-networking/`** - Network foundation (MikroTik routers, DHCP, DNS)
+2. **`local-talos/`** - Talos cluster provisioning (nodes, bootstrap)
+3. **`local-kubernetes/`** - Kubernetes workload management _(planned)_
+
 ## Getting Started
 
-1.  **Install Nix:** Follow the instructions on the [Nix website](https://nixos.org/download.html) to install Nix.
-2.  **Enter the development environment:** Run `nix develop` in the root of the repository to enter a shell with all the necessary dependencies.
-3.  **Authenticate with Google Cloud:** Run `gcloud auth application-default login` to authenticate with your Google Cloud account.
-4.  **Initialize Terraform:** Navigate to the `local-networking` directory and run `terraform init`.
-5.  **Apply the configuration:** Run `terraform apply` to apply the Terraform configuration.
+1. **Setup environment:**
+
+   ```bash
+   nix develop
+   gcloud auth application-default login
+   ```
+
+2. **Deploy in order:**
+
+   ```bash
+   # Network layer first
+   cd local-networking && terraform init && terraform apply
+
+   # Talos cluster provisioning second
+   cd ../local-talos && terraform init && terraform apply
+   ```
 
 ## Configuration
 
