@@ -104,6 +104,7 @@ module "rb5009" {
   lan_static_leases      = local.rb5009_lan_static_leases_and_records
   lan_dhcp_server_name   = local.bootstrap_configs.rb5009.local_dhcp_server_name
   dns_a_records          = local.dns_a_record
+  wan_interface          = local.bootstrap_configs.rb5009.wan_interface
 }
 
 # imports the bootstrap dhcp server and network created in the bootstrap-script to state so that we can hijack

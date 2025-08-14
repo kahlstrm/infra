@@ -15,6 +15,7 @@ locals {
       shared_lan_interface              = ""
       shared_lan_ip_address_network     = ""
       wan_interface                     = "ether1"
+      cake_enabled                      = false
       install_zerotier                  = true
       management_routes = [
         {
@@ -40,6 +41,7 @@ locals {
       shared_lan_interface              = "ether1"
       shared_lan_ip_address_network     = "${local.rb5009.shared_lan_ip}/24"
       wan_interface                     = "ether8"
+      cake_enabled                      = true
       install_zerotier                  = true
       management_routes                 = []
     }

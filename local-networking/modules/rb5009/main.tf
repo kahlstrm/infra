@@ -33,3 +33,11 @@ resource "routeros_file" "bootstrap_script" {
   name     = var.bootstrap_script.filename
   contents = var.bootstrap_script.content
 }
+
+module "cake" {
+  source        = "../cake/"
+  down_mbps     = 800
+  up_mbps       = 80
+  wan_interface = var.wan_interface
+  wan_type      = "docsis"
+}

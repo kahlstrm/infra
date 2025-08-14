@@ -48,3 +48,7 @@ variable "dns_a_records" {
     include_subdomain = optional(bool)
   }))
 }
+
+variable "wan_interface" {
+  type = string
+}
