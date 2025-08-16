@@ -6,7 +6,7 @@ locals {
       local_bridge_ports                = ["ether2", "ether3", "ether4", "ether5"]
       local_ip_network                  = local.vrrp_shared_config.vrrp_network
       local_bridge_ip_address           = local.vrrp_shared_config.virtual_ip
-      secondary_local_bridge_ip_address = local.stationary.ip
+      secondary_local_bridge_ip_address = local.stationary_hex_s.ip
       local_dhcp_server_name            = local.vrrp_shared_config.dhcp_server_name
       local_dhcp_server_lease_time      = "1m" # this is to make clients reconfigure eagerly prior to applying terraform configuration
       local_dhcp_pool_start             = 100
@@ -20,7 +20,7 @@ locals {
       management_routes = [
         {
           destination = "10.10.10.0/24"
-          gateway     = local.kuberack.shared_lan_ip
+          gateway     = local.kuberack_rb5009.shared_lan_ip
           distance    = 255
           comment     = "route to RB5009 kuberack for management"
         }
@@ -39,7 +39,7 @@ locals {
       local_dhcp_pool_end               = 254
       local_dhcp_pool_name              = "kuberack-dhcp"
       shared_lan_interface              = "ether1"
-      shared_lan_ip_address_network     = "${local.kuberack.shared_lan_ip}/24"
+      shared_lan_ip_address_network     = "${local.kuberack_rb5009.shared_lan_ip}/24"
       wan_interface                     = "ether8"
       cake_enabled                      = true
       install_zerotier                  = true
@@ -61,7 +61,7 @@ module "bootstrap_script" {
 }
 
 data "routeros_files" "stationary" {
-  provider = routeros.stationary
+  provider = routeros.stationary_hex_s
   filter = {
     name = module.bootstrap_script.stationary_hex_s.filename
   }
@@ -69,12 +69,12 @@ data "routeros_files" "stationary" {
 
 import {
   for_each = data.routeros_files.stationary.files
-  to       = module.stationary.routeros_file.bootstrap_script
+  to       = module.stationary.module.hex_s.routeros_file.bootstrap_script
   id       = each.value.id
 }
 
 data "routeros_files" "kuberack" {
-  provider = routeros.kuberack
+  provider = routeros.kuberack_rb5009
   filter = {
     name = module.bootstrap_script.kuberack_rb5009.filename
   }
@@ -82,6 +82,6 @@ data "routeros_files" "kuberack" {
 
 import {
   for_each = data.routeros_files.kuberack.files
-  to       = module.kuberack.routeros_file.bootstrap_script
+  to       = module.kuberack.module.rb5009.routeros_file.bootstrap_script
   id       = each.value.id
 }

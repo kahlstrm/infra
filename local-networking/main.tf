@@ -40,13 +40,13 @@ locals {
     local.k8s_control_plane_nodes,
     local.k8s_worker_nodes
   )
-  stationary = {
+  stationary_hex_s = {
     ip = "10.1.1.3"
     # TODO: change these when stationary has RB5009 installed
     vrrp_priority = 100
     zerotier_ip   = "10.255.255.2"
   }
-  kuberack = {
+  kuberack_rb5009 = {
     shared_lan_ip = "10.1.1.2"
     ip            = "10.10.10.1"
     # TODO: change these when stationary has RB5009 installed
@@ -64,49 +64,53 @@ locals {
 
 
 module "stationary" {
-  source = "./modules/hex-s"
+  source = "./modules/stationary"
   providers = {
-    routeros = routeros.stationary
+    routeros.hex_s = routeros.stationary_hex_s
   }
-  bootstrap_script       = module.bootstrap_script["stationary_hex_s"]
-  config                 = local.stationary
-  vrrp_shared_config     = local.vrrp_shared_config
-  vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-  vrrp_interface         = "local-bridge"
-  dns_a_records          = local.dns_a_record
+  hex_s_config = {
+    bootstrap_script       = module.bootstrap_script["stationary_hex_s"]
+    device_config          = local.stationary_hex_s
+    vrrp_shared_config     = local.vrrp_shared_config
+    vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
+    vrrp_interface         = "local-bridge"
+    dns_a_records          = local.dns_a_record
+  }
 }
 
 module "zerotier" {
   source = "./modules/zerotier"
   providers = {
-    routeros.stationary = routeros.stationary
-    routeros.kuberack   = routeros.kuberack
+    routeros.stationary = routeros.stationary_hex_s
+    routeros.kuberack   = routeros.kuberack_rb5009
     zerotier            = zerotier
   }
   stationary = {
-    internal_ip = local.stationary.ip
-    zerotier_ip = local.stationary.zerotier_ip
+    internal_ip = local.stationary_hex_s.ip
+    zerotier_ip = local.stationary_hex_s.zerotier_ip
   }
   kuberack = {
-    internal_ip    = local.kuberack.ip
-    zerotier_ip    = local.kuberack.zerotier_ip
-    vrrp_interface = local.kuberack.vrrp_interface
+    internal_ip    = local.kuberack_rb5009.ip
+    zerotier_ip    = local.kuberack_rb5009.zerotier_ip
+    vrrp_interface = local.kuberack_rb5009.vrrp_interface
   }
 }
 
 module "kuberack" {
-  source = "./modules/rb5009"
+  source = "./modules/kuberack"
   providers = {
-    routeros = routeros.kuberack
+    routeros.rb5009 = routeros.kuberack_rb5009
   }
-  bootstrap_script       = module.bootstrap_script["kuberack_rb5009"]
-  config                 = local.kuberack
-  vrrp_shared_config     = local.vrrp_shared_config
-  vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-  lan_static_leases      = local.kuberack_lan_static_leases_and_records
-  lan_dhcp_server_name   = local.bootstrap_configs.kuberack_rb5009.local_dhcp_server_name
-  dns_a_records          = local.dns_a_record
-  wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
+  rb5009_config = {
+    bootstrap_script       = module.bootstrap_script["kuberack_rb5009"]
+    device_config          = local.kuberack_rb5009
+    vrrp_shared_config     = local.vrrp_shared_config
+    vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
+    lan_static_leases      = local.kuberack_lan_static_leases_and_records
+    lan_dhcp_server_name   = local.bootstrap_configs.kuberack_rb5009.local_dhcp_server_name
+    dns_a_records          = local.dns_a_record
+    wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
+  }
 }
 
 # imports the bootstrap dhcp server and network created in the bootstrap-script to state so that we can hijack
@@ -121,19 +125,19 @@ module "kuberack" {
 # end up with 2 competing dhcp servers, one on the VRRP interface and one on the local-bridge interface.
 # TL;DR do not change the dhcp server name
 import {
-  to = module.stationary.module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
+  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
   id = "*1"
 }
 import {
-  to = module.stationary.module.vrrp.module.dhcp.routeros_ip_dhcp_server_network.dhcp_server_network
+  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_dhcp_server_network.dhcp_server_network
   id = "*1"
 }
 import {
-  to = module.stationary.module.vrrp.module.dhcp.routeros_ip_pool.dhcp_pool[0]
+  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_pool.dhcp_pool[0]
   id = "*1"
 }
 import {
-  to = module.stationary.module.vrrp.routeros_ip_address.vrrp_virtual_ip
+  to = module.stationary.module.hex_s.module.vrrp.routeros_ip_address.vrrp_virtual_ip
   id = "*1"
 }
 

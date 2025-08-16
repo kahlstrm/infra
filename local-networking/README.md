@@ -9,7 +9,7 @@ The network is composed of two main logical networks, connected by a shared high
 - **Kuberack LAN**: `10.10.10.0/24` (for devices connected only to the RB5009 and CRS305 switch)
 - **Shared LAN (VRRP)**: `10.1.1.0/24` (a high-availability network for critical devices like `pannu` and the U7 Pro Wall AP)
 - **VRRP Virtual Gateway**: `10.1.1.1`
-- **WireGuard/ZeroTier VPN**: `10.255.255.0/24` (for site-to-site connectivity when separated)
+- **ZeroTier VPN**: `10.255.255.0/24` (for site-to-site connectivity when separated)
 
 ### Network Diagram
 
@@ -85,7 +85,7 @@ VRRP handles automatic failover between routers on the shared `10.1.1.0/24` netw
 
 ## VPN
 
-When sites are separated, WireGuard/Zerotier (TBD) maintains connectivity between the `10.10.10.0/24` and `10.1.1.0/24` networks:
+When sites are separated, Zerotier maintains connectivity between the `10.10.10.0/24` and `10.1.1.0/24` networks:
 
 - **VPN Network**: `10.255.255.0/24`
 - **RB5009 VPN IP**: `10.255.255.1`
@@ -96,8 +96,8 @@ When sites are separated, WireGuard/Zerotier (TBD) maintains connectivity betwee
 
 The configuration is organized into two Terraform modules:
 
-- **`module.stationary`**: RB5009UGS router and stationary infrastructure
-- **`module.kuberack`**: RB5009 router and kuberack devices
+- **`module.stationary`**: Stationary infrastructure
+- **`module.kuberack`**: Kuberack infrastructure
 
 ### Usage
 
