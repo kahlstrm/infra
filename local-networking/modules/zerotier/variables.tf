@@ -1,4 +1,4 @@
-variable "rb5009" {
+variable "kuberack" {
   type = object({
     internal_ip    = string
     zerotier_ip    = string
@@ -6,7 +6,7 @@ variable "rb5009" {
   })
 }
 
-variable "hex_s" {
+variable "stationary" {
   type = object({
     internal_ip = string
     zerotier_ip = string

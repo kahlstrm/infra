@@ -14,5 +14,5 @@ output "k8s_workers" {
 
 output "cluster_network" {
   description = "Kubernetes cluster network"
-  value       = local.minirack.network
+  value       = local.kuberack_network.network
 }

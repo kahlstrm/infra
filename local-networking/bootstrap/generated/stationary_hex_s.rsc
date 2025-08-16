@@ -13,29 +13,29 @@
 #                          USER-CONFIGURABLE PARAMETERS
 # ------------------------------------------------------------------------------
 # --- System Identity ---
-:local systemIdentity "rb5009"
+:local systemIdentity "stationary-hex-s"
 
 # --- Local LAN Configuration ---
-:local localBridgeName "minirack-bridge"
-:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "ether6"; "ether7"; "sfp-sfpplus1"}
-:local localIpNetwork "10.10.10.0/24"
-:local localBridgeIpAddress "10.10.10.1"
+:local localBridgeName "local-bridge"
+:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"}
+:local localIpNetwork "10.1.1.0/24"
+:local localBridgeIpAddress "10.1.1.1"
 # optional, leave empty if don't want secondary bridge IP
-:local secondaryLocalBridgeIpAddress ""
-:local localDhcpServerName "minirack-dhcp"
+:local secondaryLocalBridgeIpAddress "10.1.1.3"
+:local localDhcpServerName "vrrp-dhcp"
 :local localDhcpPoolStart 100
 :local localDhcpPoolEnd 254
-:local localDhcpPoolName "minirack-dhcp"
-:local localDhcpServerLeaseTime 30m
+:local localDhcpPoolName "vrrp-dhcp"
+:local localDhcpServerLeaseTime 1m
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
 # Optional set sharedLanInterface empty to disable
-:local sharedLanInterface "ether1"
-:local sharedLanIpAddressNetwork "10.1.1.2/24"
+:local sharedLanInterface ""
+:local sharedLanIpAddressNetwork ""
 
 # --- WAN Configuration ---
-:local wanInterface "ether8"
+:local wanInterface "ether1"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -100,6 +100,9 @@
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
 
+# --- Management Routes ---
+# Routes to reach other routers' management networks during bootstrap
+/ip route add dst-address=10.10.10.0/24 gateway=10.1.1.2 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
@@ -130,7 +133,7 @@
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop all not coming from LAN"
   filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept in ipsec policy"
   filter add chain=forward action=accept ipsec-policy=out,ipsec comment="bootstrap: accept out ipsec policy"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related in-interface-list=LAN out-interface-list=LAN comment="bootstrap: fasttrack"
+  filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related, untracked"
   filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=forward action=drop connection-state=new connection-nat-state=!dstnat in-interface-list=WAN comment="bootstrap: drop all from WAN not DSTNATed"
@@ -156,7 +159,7 @@
   filter add chain=input action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
   filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related in-interface-list=LAN out-interface-list=LAN comment="bootstrap: fasttrack6"
+  filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack6"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
   filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=forward action=drop src-address-list=bad_ipv6 comment="bootstrap: drop packets with bad src ipv6"

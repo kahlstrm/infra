@@ -25,16 +25,16 @@ provider "google" {
 }
 
 provider "routeros" {
-  alias    = "hex-s"
-  hosturl  = local.hex_s.ip
+  alias    = "stationary"
+  hosturl  = local.stationary.ip
   username = local.config["hex_s"]["username"]
   password = local.config["hex_s"]["password"]
   insecure = true
 }
 
 provider "routeros" {
-  alias    = "rb5009"
-  hosturl  = local.rb5009.ip
+  alias    = "kuberack"
+  hosturl  = local.kuberack.ip
   username = local.config["rb5009"]["username"]
   password = local.config["rb5009"]["password"]
   insecure = true
