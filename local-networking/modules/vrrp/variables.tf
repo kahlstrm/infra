@@ -3,6 +3,11 @@ variable "interface" {
   type        = string
 }
 
+variable "vrrp_lan_ip_address" {
+  description = "IP address on the VRRP network"
+  type        = string
+}
+
 variable "config" {
   type = object({
     vrrp_network     = string
@@ -36,3 +41,4 @@ variable "lan_interface_list_name" {
   type        = string
   default     = "LAN"
 }
+

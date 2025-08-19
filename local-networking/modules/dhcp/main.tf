@@ -27,7 +27,7 @@ resource "routeros_ip_dhcp_server_network" "dhcp_server_network" {
 
 resource "routeros_ip_pool" "dhcp_pool" {
   count  = var.pool_ranges != null ? 1 : 0
-  name   = "vrrp-dhcp"
+  name   = var.dhcp_server_name
   ranges = var.pool_ranges
 }
 

@@ -63,6 +63,27 @@ provider "registry.terraform.io/terraform-routeros/routeros" {
   ]
 }
 
+provider "registry.terraform.io/vancluever/acme" {
+  version     = "2.35.1"
+  constraints = "~> 2.0"
+  hashes = [
+    "h1:z7JhyZsBnsS1pf4kGHah0Plqbi+QSIr/xaMq2kZrnUU=",
+    "zh:1577a2f5c614eec51606f4eb534c10745e469e622c2ce4497bca4a07ff629c21",
+    "zh:38fde057675be2ce301b7aa04ab5d8e95afedf09900c63e17c8925b94f4a4893",
+    "zh:3f1b7fdbecde741d15a2cdffcafd65c1b521b910bfdbad8b5a4f2c1b7194ca0b",
+    "zh:4266f0d4316ff3187f77d452b311b073b7b9cf95ea8a05fe8002972ef6c7d0b5",
+    "zh:7559f843ea29692020669aa46352bfaa17d9210fc4111ad152e80d378f2b8a03",
+    "zh:8f774722f447ab0e98b39f59bbe2026da1636af2f02be09d78e6b82219c650b1",
+    "zh:94e78e767d8035783f5d5035a3051c09d93d267fd30be1c932a5d2e60f30acb6",
+    "zh:9d71d9c3b6b39292247f4a69e0c2a62afc0acc3fa1110d402d12ec0d8457a512",
+    "zh:b1015bb025361e1b2969c746f4faf3fae44fef59c4852877809d544924107e8b",
+    "zh:bdfd16c58d888e7a660df73b3aa568a7464b7c08559bc1e09226bb57408f379e",
+    "zh:da08c0660c1332de4caba5c1884b34d21a809169ff4b3f4e0037aa6b6146ac34",
+    "zh:df1027bf3b22bbfb6605c428af4503b5d74f9ea7409e2809662670ef3adc6ec8",
+    "zh:f394caa54ff9a32e28026e305bb6a87c9551bee0dd5c3be0797bc20c90af5661",
+  ]
+}
+
 provider "registry.terraform.io/zerotier/zerotier" {
   version     = "1.6.0"
   constraints = "~> 1.0"

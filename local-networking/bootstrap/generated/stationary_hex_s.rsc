@@ -18,21 +18,13 @@
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
 :local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"}
-:local localIpNetwork "10.1.1.0/24"
-:local localBridgeIpAddress "10.1.1.1"
-# optional, leave empty if don't want secondary bridge IP
-:local secondaryLocalBridgeIpAddress "10.1.1.3"
-:local localDhcpServerName "vrrp-dhcp"
-:local localDhcpPoolStart 100
-:local localDhcpPoolEnd 254
-:local localDhcpPoolName "vrrp-dhcp"
-:local localDhcpServerLeaseTime 1m
+:local localIpv6Address "fd00:de:ad:1::3/64"
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
 # Optional set sharedLanInterface empty to disable
 :local sharedLanInterface ""
-:local sharedLanIpAddressNetwork ""
+:local sharedLanIpv6AddressNetwork ""
 
 # --- WAN Configuration ---
 :local wanInterface "ether1"
@@ -41,11 +33,8 @@
 #-------------------------------------------------------------------------------
 #                            DERIVED PARAMETERS
 #-------------------------------------------------------------------------------
-:local localNetworkPart [:pick $localIpNetwork 0 [:find $localIpNetwork "/"]]
-:local localCidrSuffix [:pick $localIpNetwork [:find $localIpNetwork "/"] [:len $localIpNetwork]]
-:local localNetworkPrefix [:pick $localNetworkPart 0 ([:len $localNetworkPart] - 1)]
-:local localDhcpPoolRange ($localNetworkPrefix . $localDhcpPoolStart . "-" . $localNetworkPrefix . $localDhcpPoolEnd)
 :local createLocalBridge ([:len $localBridgePorts] > 0)
+:local localIpv6Host [:pick $localIpv6Address 0 [:find $localIpv6Address "/"]]
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -66,7 +55,7 @@
 /interface list add name=WAN comment="bootstrap"
 /interface list add name=LAN comment="bootstrap"
 # --- Local Bridge Setup ---
-# Create a bridge and DHCP server only if there are interfaces defined.
+# Create a bridge for the local LAN.
 :if ($createLocalBridge) do={
   /interface bridge
     add name=$localBridgeName disabled=no protocol-mode=rstp comment="bootstrap";
@@ -80,29 +69,32 @@
     /interface bridge port add bridge=$localBridgeName interface=$port comment=bootstrap;
   }
 
-  # Configure IP, DHCP, and add to LAN interface list.
-  /ip pool add name=$localDhcpPoolName ranges=$localDhcpPoolRange;
-  /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName lease-time=$localDhcpServerLeaseTime use-reconfigure=yes disabled=no comment="bootstrap";
-  /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
-  /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
-  :if ($secondaryLocalBridgeIpAddress != "") do={
-    /ip address add address="$secondaryLocalBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
-  }
+  # --- IP Setup for Local LAN ---
+  /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
+  /ipv6 nd prefix default set autonomous=yes;
+  /ipv6 nd disable [find default]
+  /ipv6 nd add interface=$localBridgeName advertise-dns=yes dns=$localIpv6Host managed-address-configuration=no other-configuration=no
+
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
 
   # Set the flag to indicate the bridge was created.
   :set isLocalBridgeCreated true;
 }
 
+# --- Static DNS Records for All Routers ---
+# Add records for all managed routers to solve provider DNS resolution.
+/ip dns static add name="kuberack-rb5009.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary-hex-s.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
+
 # --- Shared LAN Setup ---
 :if ($sharedLanInterface != "") do={
-  /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
+  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
-/ip route add dst-address=10.10.10.0/24 gateway=10.1.1.2 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
+/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:1::2 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
@@ -118,9 +110,13 @@
 /tool mac-server mac-winbox set allowed-interface-list=MGMT_ALLOWED
 
 # --- Global Services ---
-# Enable DNS and configure a DHCP client on the WAN interface.
+# Enable DNS and configure DHCP clients on the WAN for dual-stack connectivity.
 /ip dns set allow-remote-requests=yes
 /ip dhcp-client add interface=$wanInterface disabled=no comment="bootstrap"
+/ipv6 settings set accept-router-advertisements=yes forward=yes
+/ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no comment="bootstrap"
+/ipv6 nd add interface=$wanInterface
+/ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName advertise=yes eui-64=yes comment="bootstrap"
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
@@ -218,3 +214,6 @@
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }
+# reboot for ipv6 accept-router-advertisement setting to be enabled
+:log info "Rebooting for ipv6 accept-router-advertisement change"
+:execute script="/system reboot"

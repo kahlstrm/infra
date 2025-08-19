@@ -28,8 +28,8 @@ variable "vrrp_shared_config" {
   })
 }
 
-variable "vrrp_interface" {
-  description = "name of the interface for the VRRP to be setup on top of"
+variable "bridge_interface" {
+  description = "name of the interface for the bridge"
   type        = string
 }
 

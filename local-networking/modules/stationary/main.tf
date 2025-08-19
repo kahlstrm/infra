@@ -18,6 +18,7 @@ module "hex_s" {
   config                 = var.hex_s_config.device_config
   vrrp_lan_static_leases = var.hex_s_config.vrrp_lan_static_leases
   vrrp_shared_config     = var.hex_s_config.vrrp_shared_config
-  vrrp_interface         = var.hex_s_config.vrrp_interface
+  bridge_interface       = var.hex_s_config.bridge_interface
   dns_a_records          = var.hex_s_config.dns_a_records
 }
+

@@ -45,21 +45,40 @@ locals {
     # TODO: change these when stationary has RB5009 installed
     vrrp_priority = 100
     zerotier_ip   = "10.255.255.2"
+    domain_name   = "stationary-hex-s.networking.kalski.xyz"
   }
   kuberack_rb5009 = {
-    shared_lan_ip = "10.1.1.2"
-    ip            = "10.10.10.1"
+    shared_lan_ip   = "10.1.1.2"
+    shared_lan_ipv6 = "fd00:de:ad:1::2"
+    ip              = "10.10.10.1"
     # TODO: change these when stationary has RB5009 installed
     vrrp_priority  = 254
     vrrp_interface = "ether1"
     zerotier_ip    = "10.255.255.1"
+    domain_name    = "kuberack-rb5009.networking.kalski.xyz"
   }
   kuberack_network = {
     network = "10.10.10.0/24"
   }
+  kuberack_dhcp_config = {
+    server_name     = "kuberack-dhcp"
+    network_address = "10.10.10.0/24"
+    pool_ranges     = ["10.10.10.100-10.10.10.254"]
+  }
+  all_router_dns_records = {
+    "stationary-hex-s.networking.kalski.xyz" = {
+      ip   = local.stationary_hex_s.ip
+      ipv6 = "fd00:de:ad:1::3"
+    },
+    "kuberack-rb5009.networking.kalski.xyz" = {
+      ip   = local.kuberack_rb5009.ip
+      ipv6 = "fd00:de:ad:10::1"
+    }
+  }
 }
+
 locals {
-  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records)
+  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records)
 }
 
 
@@ -73,10 +92,11 @@ module "stationary" {
     device_config          = local.stationary_hex_s
     vrrp_shared_config     = local.vrrp_shared_config
     vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-    vrrp_interface         = "local-bridge"
+    bridge_interface       = "local-bridge"
     dns_a_records          = local.dns_a_record
   }
 }
+
 
 module "zerotier" {
   source = "./modules/zerotier"
@@ -107,37 +127,32 @@ module "kuberack" {
     vrrp_shared_config     = local.vrrp_shared_config
     vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
     lan_static_leases      = local.kuberack_lan_static_leases_and_records
-    lan_dhcp_server_name   = local.bootstrap_configs.kuberack_rb5009.local_dhcp_server_name
+    lan_dhcp_config        = local.kuberack_dhcp_config
+    bridge_interface       = "kuberack-bridge"
     dns_a_records          = local.dns_a_record
     wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
   }
 }
 
-# imports the bootstrap dhcp server and network created in the bootstrap-script to state so that we can hijack
-# The reason why this works after resetting configuration on device is that terraform lives in a state where:
-# - Either the terraform has previously already imported this resource to the state, so it just asks for this specific resource from the router
-# - If terraform state does not contain the resources, it will import these.
-# Admittedly this is a bit hacky but it works so ¯\_(ツ)_/¯
-# NOTE: these IDs rely on the bootstrap script creating the specific things in order, changing the script might break these
-# Also, the name of at least the dhcp-server needs to match 1 to 1 in order to avoid rogue DHCP servers. This is due to the fact that
-# terraform will create and destroy the old one on name change, that then changes the underlying ID. After ID is changed the import block below
-# will be ignored after running "reset configuration" on the device. Next terraform apply will create the dhcp server from scratch, and then you
-# end up with 2 competing dhcp servers, one on the VRRP interface and one on the local-bridge interface.
-# TL;DR do not change the dhcp server name
-import {
-  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
-  id = "*1"
+module "stationary_hex_s_cert" {
+  source = "./modules/cert"
+  providers = {
+    routeros = routeros.stationary_hex_s
+    acme     = acme
+  }
+  account_key_pem  = acme_registration.reg.account_key_pem
+  cf_dns_api_token = local.config["cf_dns_api_token"]
+  domain           = local.stationary_hex_s.domain_name
 }
-import {
-  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_dhcp_server_network.dhcp_server_network
-  id = "*1"
-}
-import {
-  to = module.stationary.module.hex_s.module.vrrp.module.dhcp.routeros_ip_pool.dhcp_pool[0]
-  id = "*1"
-}
-import {
-  to = module.stationary.module.hex_s.module.vrrp.routeros_ip_address.vrrp_virtual_ip
-  id = "*1"
+
+module "kuberack_rb5009_cert" {
+  providers = {
+    routeros = routeros.kuberack_rb5009
+    acme     = acme
+  }
+  source           = "./modules/cert"
+  account_key_pem  = acme_registration.reg.account_key_pem
+  cf_dns_api_token = local.config["cf_dns_api_token"]
+  domain           = local.kuberack_rb5009.domain_name
 }
 

@@ -6,6 +6,11 @@ terraform {
   }
 }
 
+resource "routeros_ip_address" "shared_lan_ip" {
+  interface = var.interface
+  address   = var.vrrp_lan_ip_address
+}
+
 # Creates the VRRP virtual interface.
 resource "routeros_interface_vrrp" "vrrp" {
   name            = var.vrrp_name

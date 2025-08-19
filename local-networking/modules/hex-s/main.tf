@@ -6,20 +6,14 @@ terraform {
   }
 }
 
-
-moved {
-  from = routeros_ip_dhcp_server.bootstrap_dhcp_disable
-  to   = module.vrrp.module.dhcp.routeros_ip_dhcp_server.dhcp_server
-}
-
-
 module "vrrp" {
   source = "../vrrp"
   # The VRRP instance will run on the main LAN bridge, found dynamically.
-  interface     = var.vrrp_interface
-  config        = var.vrrp_shared_config
-  priority      = var.config["vrrp_priority"]
-  static_leases = var.vrrp_lan_static_leases
+  interface           = var.bridge_interface
+  vrrp_lan_ip_address = "${var.config.ip}/24"
+  config              = var.vrrp_shared_config
+  priority            = var.config["vrrp_priority"]
+  static_leases       = var.vrrp_lan_static_leases
 }
 
 module "dns" {

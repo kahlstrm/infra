@@ -22,21 +22,13 @@
 # --- Local LAN Configuration ---
 :local localBridgeName "${local_bridge_name}"
 :local localBridgePorts {${local_bridge_ports}}
-:local localIpNetwork "${local_ip_network}"
-:local localBridgeIpAddress "${local_bridge_ip_address}"
-# optional, leave empty if don't want secondary bridge IP
-:local secondaryLocalBridgeIpAddress "${secondary_local_bridge_ip_address}"
-:local localDhcpServerName "${local_dhcp_server_name}"
-:local localDhcpPoolStart ${local_dhcp_pool_start}
-:local localDhcpPoolEnd ${local_dhcp_pool_end}
-:local localDhcpPoolName "${local_dhcp_pool_name}"
-:local localDhcpServerLeaseTime ${local_dhcp_server_lease_time}
+:local localIpv6Address "${local_ipv6_address}"
 
 # --- Shared LAN Configuration ---
 # This is a dedicated interface for the shared VRRP network.
 # Optional set sharedLanInterface empty to disable
 :local sharedLanInterface "${shared_lan_interface}"
-:local sharedLanIpAddressNetwork "${shared_lan_ip_address_network}"
+:local sharedLanIpv6AddressNetwork "${shared_lan_ipv6_address_network}"
 
 # --- WAN Configuration ---
 :local wanInterface "${wan_interface}"
@@ -45,11 +37,8 @@
 #-------------------------------------------------------------------------------
 #                            DERIVED PARAMETERS
 #-------------------------------------------------------------------------------
-:local localNetworkPart [:pick $localIpNetwork 0 [:find $localIpNetwork "/"]]
-:local localCidrSuffix [:pick $localIpNetwork [:find $localIpNetwork "/"] [:len $localIpNetwork]]
-:local localNetworkPrefix [:pick $localNetworkPart 0 ([:len $localNetworkPart] - 1)]
-:local localDhcpPoolRange ($localNetworkPrefix . $localDhcpPoolStart . "-" . $localNetworkPrefix . $localDhcpPoolEnd)
 :local createLocalBridge ([:len $localBridgePorts] > 0)
+:local localIpv6Host [:pick $localIpv6Address 0 [:find $localIpv6Address "/"]]
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -70,7 +59,7 @@
 /interface list add name=WAN comment="bootstrap"
 /interface list add name=LAN comment="bootstrap"
 # --- Local Bridge Setup ---
-# Create a bridge and DHCP server only if there are interfaces defined.
+# Create a bridge for the local LAN.
 :if ($createLocalBridge) do={
   /interface bridge
     add name=$localBridgeName disabled=no protocol-mode=rstp comment="bootstrap";
@@ -84,23 +73,27 @@
     /interface bridge port add bridge=$localBridgeName interface=$port comment=bootstrap;
   }
 
-  # Configure IP, DHCP, and add to LAN interface list.
-  /ip pool add name=$localDhcpPoolName ranges=$localDhcpPoolRange;
-  /ip dhcp-server add name=$localDhcpServerName address-pool=$localDhcpPoolName interface=$localBridgeName lease-time=$localDhcpServerLeaseTime use-reconfigure=yes disabled=no comment="bootstrap";
-  /ip dhcp-server network add address=$localIpNetwork gateway=$localBridgeIpAddress dns-server=$localBridgeIpAddress comment="bootstrap";
-  /ip address add address="$localBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
-  :if ($secondaryLocalBridgeIpAddress != "") do={
-    /ip address add address="$secondaryLocalBridgeIpAddress$localCidrSuffix" interface=$localBridgeName comment="bootstrap";
-  }
+  # --- IP Setup for Local LAN ---
+  /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
+  /ipv6 nd prefix default set autonomous=yes;
+  /ipv6 nd disable [find default]
+  /ipv6 nd add interface=$localBridgeName advertise-dns=yes dns=$localIpv6Host managed-address-configuration=no other-configuration=no
+
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
 
   # Set the flag to indicate the bridge was created.
   :set isLocalBridgeCreated true;
 }
 
+# --- Static DNS Records for All Routers ---
+# Add records for all managed routers to solve provider DNS resolution.
+%{ for name, ips in all_router_dns_records ~}
+/ip dns static add name="${name}" address=${ips.ipv6} type=AAAA comment="bootstrap"
+%{ endfor ~}
+
 # --- Shared LAN Setup ---
 :if ($sharedLanInterface != "") do={
-  /ip address add address="$sharedLanIpAddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
+  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
 
@@ -108,7 +101,7 @@
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
 %{ for route in management_routes ~}
-/ip route add dst-address=${route.destination} gateway=${route.gateway} distance=${route.distance} comment="bootstrap: ${route.comment}"
+/ipv6 route add dst-address=${route.ipv6_destination} gateway=${route.ipv6_gateway} distance=${route.distance} comment="bootstrap: ${route.comment}"
 %{ endfor ~}
 %{ endif ~}
 #
@@ -126,9 +119,13 @@
 /tool mac-server mac-winbox set allowed-interface-list=MGMT_ALLOWED
 
 # --- Global Services ---
-# Enable DNS and configure a DHCP client on the WAN interface.
+# Enable DNS and configure DHCP clients on the WAN for dual-stack connectivity.
 /ip dns set allow-remote-requests=yes
 /ip dhcp-client add interface=$wanInterface disabled=no comment="bootstrap"
+/ipv6 settings set accept-router-advertisements=yes forward=yes
+/ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no comment="bootstrap"
+/ipv6 nd add interface=$wanInterface
+/ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName advertise=yes eui-64=yes comment="bootstrap"
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
@@ -226,3 +223,6 @@
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }%{ endif }
+# reboot for ipv6 accept-router-advertisement setting to be enabled
+:log info "Rebooting for ipv6 accept-router-advertisement change"
+:execute script="/system reboot"
