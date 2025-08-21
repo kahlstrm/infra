@@ -4,10 +4,12 @@ locals {
   # Node-specific configuration
   node_config = {
     "c1.k8s.kalski.xyz" = {
-      talos_install_disk = "/dev/mmcblk0"
+      install_disk  = "/dev/nvme0n1"
+      install_image = "ghcr.io/talos-rpi5/installer:v1.10.6-rpi5"
     }
     "w1.k8s.kalski.xyz" = {
-      talos_install_disk = "/dev/nvme1n1"
+      install_disk  = "/dev/nvme1n1"
+      install_image = "ghcr.io/siderolabs/installer:v1.10.6"
     }
   }
 }
@@ -43,10 +45,11 @@ resource "talos_machine_configuration_apply" "controlplane" {
   for_each                    = local.k8s_controlplanes
   node                        = each.value.ip
   config_patches = [
-    templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname     = each.key
-      install_disk = local.node_config[each.key].talos_install_disk
-    })
+    templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", merge({
+      hostname = each.key
+      },
+      local.node_config[each.key]
+    ))
   ]
 }
 
@@ -56,10 +59,11 @@ resource "talos_machine_configuration_apply" "worker" {
   for_each                    = local.k8s_workers
   node                        = each.value.ip
   config_patches = [
-    templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", {
-      hostname     = each.key
-      install_disk = local.node_config[each.key].talos_install_disk
-    })
+    templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", merge({
+      hostname = each.key
+      },
+      local.node_config[each.key]
+    ))
   ]
 }
 
