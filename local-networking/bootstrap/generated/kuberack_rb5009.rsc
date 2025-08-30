@@ -112,8 +112,8 @@
 /ip dhcp-client add interface=$wanInterface disabled=no comment="bootstrap"
 /ipv6 settings set accept-router-advertisements=yes forward=yes
 /ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no comment="bootstrap"
-/ipv6 nd add interface=$wanInterface
-/ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName advertise=yes eui-64=yes comment="bootstrap"
+/ipv6 nd add interface=$wanInterface advertise-dns=no advertise-mac-address=no
+/ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName advertise=yes comment="bootstrap"
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
