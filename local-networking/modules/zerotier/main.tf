@@ -21,7 +21,7 @@ resource "zerotier_network" "network" {
     end   = "10.255.255.254"
   }
   # dynamic "route" {
-  #   for_each = [var.hex_s, var.rb5009]
+  #   for_each = [var.kuberack, var.stationary]
   #   content {
   #     target = route.value.internal_ip
   #     via    = route.value.zerotier_ip
@@ -128,20 +128,22 @@ resource "routeros_ip_route" "kuberack_vrrp_lan_primary" {
 }
 
 resource "routeros_ip_route" "kuberack_vrrp_lan_fallback" {
-  provider    = routeros.kuberack
-  dst_address = "10.1.1.0/24"
-  gateway     = var.stationary.zerotier_ip
-  distance    = 10
-  comment     = "Fallback route to VRRP LAN via ZeroTier"
-  depends_on  = [routeros_ip_address.kuberack_zerotier_ip]
+  provider      = routeros.kuberack
+  dst_address   = "10.1.1.0/24"
+  gateway       = var.stationary.zerotier_ip
+  distance      = 10
+  check_gateway = "ping"
+  comment       = "Fallback route to VRRP LAN via ZeroTier"
+  depends_on    = [routeros_ip_address.kuberack_zerotier_ip]
 }
 
 # Static routes for stationary router
 resource "routeros_ip_route" "stationary_kuberack_lan_fallback" {
-  provider    = routeros.stationary
-  dst_address = "10.10.10.0/24"
-  gateway     = var.kuberack.zerotier_ip
-  distance    = 10
-  comment     = "Fallback route to Kuberack LAN via ZeroTier"
-  depends_on  = [routeros_ip_address.stationary_zerotier_ip]
+  provider      = routeros.stationary
+  dst_address   = "10.10.10.0/24"
+  gateway       = var.kuberack.zerotier_ip
+  distance      = 10
+  check_gateway = "ping"
+  comment       = "Fallback route to Kuberack LAN via ZeroTier"
+  depends_on    = [routeros_ip_address.stationary_zerotier_ip]
 }

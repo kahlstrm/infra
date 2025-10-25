@@ -38,6 +38,13 @@ resource "routeros_ip_service" "www" {
   disabled = true
 }
 
+resource "routeros_ip_service" "api_ssl" {
+  numbers     = "api-ssl"
+  certificate = routeros_system_certificate.external.name
+  port        = 8729
+  disabled    = false
+}
+
 resource "routeros_ip_service" "www_ssl" {
   numbers     = "www-ssl"
   certificate = routeros_system_certificate.external.name
