@@ -107,8 +107,9 @@ terraform apply
 
 The new node will automatically join the existing cluster.
 
-## Troubleshooting
+## Storage Configuration
 
-- **Nodes not accessible**: Verify network connectivity and DHCP assignments
-- **Configuration apply fails**: Check disk paths exist and nodes are responsive
-- **Bootstrap hangs**: Control plane initialization can take several minutes
+### Current Setup (< 3 workers)
+
+- **local-nvme** StorageClass: Uses disk specified by serial (nvme2n1) for local hostpath storage
+- **nvme1n1**: Reserved for future replicated storage
