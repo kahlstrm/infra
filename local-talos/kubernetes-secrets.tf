@@ -42,3 +42,29 @@ resource "kubernetes_secret" "mikrotik_credentials" {
     MIKROTIK_SKIP_TLS_VERIFY = "true"
   }
 }
+
+resource "random_password" "harbor_admin" {
+  length  = 32
+  special = true
+}
+
+resource "kubernetes_namespace" "harbor" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "harbor"
+  }
+}
+
+resource "kubernetes_secret" "harbor_admin" {
+  depends_on = [kubernetes_namespace.harbor]
+
+  metadata {
+    name      = "harbor-admin-password"
+    namespace = "harbor"
+  }
+
+  data = {
+    HARBOR_ADMIN_PASSWORD = random_password.harbor_admin.result
+  }
+}

@@ -27,7 +27,8 @@ spec:
 
         externalURL: https://harbor.kube.kalski.xyz
 
-        harborAdminPassword: "admin"
+        existingSecretAdminPassword: harbor-admin-password
+        existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
 
         persistence:
           persistentVolumeClaim:
