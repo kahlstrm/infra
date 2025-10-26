@@ -132,6 +132,7 @@ module "kuberack" {
     dns_a_records          = local.dns_a_record
     wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
   }
+  external_dns_password = local.config["external_dns_password"]
 }
 
 module "stationary_hex_s_cert" {

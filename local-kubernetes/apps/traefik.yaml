@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    targetRevision: 37.2.0
+    helm:
+      values: |
+        deployment:
+          replicas: 1
+
+        service:
+          type: LoadBalancer
+
+        ports:
+          web:
+            port: 80
+            expose:
+              default: true
+            protocol: TCP
+          websecure:
+            port: 443
+            expose:
+              default: true
+            protocol: TCP
+            tls:
+              enabled: true
+
+        ingressRoute:
+          dashboard:
+            enabled: true
+
+        persistence:
+          enabled: true
+          storageClass: local-storage
+          size: 1Gi
+          path: /data
+
+        env:
+          - name: CF_DNS_API_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: cloudflare-api-token
+                key: CF_DNS_API_TOKEN
+
+        additionalArguments:
+          - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+          - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+          - "--certificatesresolvers.letsencrypt.acme.email=kalle.ahlstrom@iki.fi"
+          - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

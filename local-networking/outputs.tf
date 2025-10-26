@@ -16,3 +16,18 @@ output "cluster_network" {
   description = "Kubernetes cluster network"
   value       = local.kuberack_network.network
 }
+
+output "secret_id" {
+  description = "Google Secret Manager secret ID for cross-layer access"
+  value       = module.secrets.secret_id
+}
+
+output "external_dns_username" {
+  description = "MikroTik external-dns service account username"
+  value       = "external-dns"
+}
+
+output "kuberack_domain" {
+  description = "Kuberack RB5009 domain name for API access"
+  value       = local.kuberack_rb5009.domain_name
+}
