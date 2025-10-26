@@ -15,14 +15,15 @@ spec:
         - "nodejs-backend:v1=harbor.kube.kalski.xyz/library/nodejs-backend:v1"
         - "reactjs-ui:v1=harbor.kube.kalski.xyz/library/reactjs-ui:v1"
       patches:
-        - target:
+        - patch: |-
+            $patch: delete
+            apiVersion: v1
+            kind: PersistentVolume
+            metadata:
+              name: postgres-pv
+          target:
             kind: PersistentVolume
             name: postgres-pv
-          patch: |-
-            - op: replace
-              path: /metadata/name
-              value: this-resource-will-be-ignored
-            $patch: delete
         - target:
             kind: PersistentVolumeClaim
           patch: |-
