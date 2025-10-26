@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://helm.goharbor.io
+    chart: harbor
+    targetRevision: 1.18.0
+    helm:
+      values: |
+        expose:
+          type: ingress
+          tls:
+            enabled: true
+            certSource: none
+          ingress:
+            className: traefik
+            hosts:
+              core: harbor.kube.kalski.xyz
+            annotations:
+              traefik.ingress.kubernetes.io/router.entrypoints: websecure
+              traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+
+        externalURL: https://harbor.kube.kalski.xyz
+
+        harborAdminPassword: "admin"
+
+        persistence:
+          persistentVolumeClaim:
+            registry:
+              storageClass: local-storage
+              size: 50Gi
+            database:
+              storageClass: local-storage
+              size: 5Gi
+            redis:
+              storageClass: local-storage
+              size: 1Gi
+            trivy:
+              storageClass: local-storage
+              size: 5Gi
+
+        database:
+          type: internal
+
+        redis:
+          type: internal
+
+        trivy:
+          enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
