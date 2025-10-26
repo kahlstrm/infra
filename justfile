@@ -10,6 +10,9 @@ help:
     echo "  just clean             - Clean old versions (keep latest 2)"
     echo "  just clean --dry-run   - Dry run: show what would be deleted"
     echo ""
+    echo "RouterOS REST API Commands:"
+    echo "  just rest <router> <method> <path>  - Debug RouterOS REST API"
+    echo ""
     echo "Current secret: $SECRET_NAME"
 
 # Edit secret
@@ -49,7 +52,7 @@ edit:
 view:
     #!/usr/bin/env bash
     SECRET_NAME=$(basename $(pwd))
-    echo "Current value of $SECRET_NAME:"
+    echo "Current value of $SECRET_NAME:" >&2
     gcloud secrets versions access latest --secret="$SECRET_NAME" | jq .
 
 # List all versions
@@ -100,3 +103,26 @@ clean dry_run="false":
     else
         echo "No old versions to clean up"
     fi
+
+# RouterOS REST API debug
+[no-cd]
+rest router method path +curl_args='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "${MT_PASSWORD:-}" ]; then
+        echo "Error: MT_PASSWORD environment variable not set"
+        exit 1
+    fi
+    case "{{router}}" in
+        rb5009)
+            ROUTER_URL="https://kuberack-rb5009.networking.kalski.xyz"
+            ;;
+        hex_s)
+            ROUTER_URL="https://stationary-hex-s.networking.kalski.xyz"
+            ;;
+        *)
+            ROUTER_URL="http://{{router}}"
+            ;;
+    esac
+    METHOD="{{method}}"
+    curl -sk -u "admin:$MT_PASSWORD" -X "${METHOD^^}" {{curl_args}} "$ROUTER_URL/rest/{{path}}"
