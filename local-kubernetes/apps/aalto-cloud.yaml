@@ -14,6 +14,19 @@ spec:
       images:
         - "nodejs-backend:v1=harbor.kube.kalski.xyz/library/nodejs-backend:v1"
         - "reactjs-ui:v1=harbor.kube.kalski.xyz/library/reactjs-ui:v1"
+      patches:
+        - target:
+            kind: PersistentVolume
+          patch: |-
+            - op: replace
+              path: /spec/storageClassName
+              value: local-storage
+        - target:
+            kind: PersistentVolumeClaim
+          patch: |-
+            - op: replace
+              path: /spec/storageClassName
+              value: local-storage
 
   destination:
     server: https://kubernetes.default.svc
