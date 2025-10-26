@@ -3,6 +3,11 @@ resource "kubernetes_namespace" "traefik" {
 
   metadata {
     name = "traefik"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
+    }
   }
 }
 
