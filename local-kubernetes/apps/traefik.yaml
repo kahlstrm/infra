@@ -42,6 +42,11 @@ spec:
             tls:
               enabled: true
 
+        providers:
+          kubernetesIngress:
+            publishedService:
+              enabled: true
+
         ingressRoute:
           dashboard:
             enabled: true
