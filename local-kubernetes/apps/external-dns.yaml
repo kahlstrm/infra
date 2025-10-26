@@ -70,6 +70,7 @@ spec:
 
         extraArgs:
           - --ignore-ingress-tls-spec
+          - --publish-internal-services
 
   destination:
     server: https://kubernetes.default.svc
