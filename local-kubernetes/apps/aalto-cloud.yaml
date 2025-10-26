@@ -17,10 +17,12 @@ spec:
       patches:
         - target:
             kind: PersistentVolume
+            name: postgres-pv
           patch: |-
             - op: replace
-              path: /spec/storageClassName
-              value: local-storage
+              path: /metadata/name
+              value: this-resource-will-be-ignored
+            $patch: delete
         - target:
             kind: PersistentVolumeClaim
           patch: |-
