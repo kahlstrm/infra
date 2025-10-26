@@ -184,16 +184,20 @@ resource "kubernetes_storage_class_v1" "local_nvme" {
 
   metadata {
     name = "local-storage"
+    annotations = {
+      "openebs.io/cas-type"   = "local"
+      "cas.openebs.io/config" = <<-EOT
+        - name: StorageType
+          value: "hostpath"
+        - name: BasePath
+          value: "/var/mnt/local-storage"
+      EOT
+    }
   }
 
   storage_provisioner    = "openebs.io/local"
   volume_binding_mode    = "WaitForFirstConsumer"
   allow_volume_expansion = true
-
-  parameters = {
-    storage  = "hostpath"
-    basePath = "/var/mnt/local-storage"
-  }
 
   lifecycle {
     prevent_destroy = true

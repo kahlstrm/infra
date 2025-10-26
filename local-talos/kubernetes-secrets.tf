@@ -39,6 +39,6 @@ resource "kubernetes_secret" "mikrotik_credentials" {
     MIKROTIK_BASEURL         = "https://${data.terraform_remote_state.networking.outputs.kuberack_domain}"
     MIKROTIK_USERNAME        = data.terraform_remote_state.networking.outputs.external_dns_username
     MIKROTIK_PASSWORD        = local.config["external_dns_password"]
-    MIKROTIK_SKIP_TLS_VERIFY = "false"
+    MIKROTIK_SKIP_TLS_VERIFY = "true"
   }
 }
