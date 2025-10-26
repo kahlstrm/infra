@@ -44,6 +44,11 @@ variable "kuberack_dns_server" {
   type        = string
 }
 
+variable "kuberack_dns_server_ipv6" {
+  description = "IPv6 DNS server for the kuberack, used for kubernetes internal DNS resolution"
+  type        = string
+}
+
 variable "kuberack_network" {
   description = "The kuberack network CIDR (destination for routing)"
   type        = string

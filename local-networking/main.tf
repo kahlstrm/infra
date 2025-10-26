@@ -52,6 +52,7 @@ locals {
     shared_lan_ip   = "10.1.1.2"
     shared_lan_ipv6 = "fd00:de:ad:1::2"
     ip              = "10.10.10.1"
+    ipv6            = "fd00:de:ad:10::1"
     # TODO: change these when stationary has RB5009 installed
     vrrp_priority  = 254
     vrrp_interface = "ether1"
@@ -90,15 +91,16 @@ module "stationary" {
     routeros.hex_s = routeros.stationary_hex_s
   }
   hex_s_config = {
-    bootstrap_script       = module.bootstrap_script["stationary_hex_s"]
-    device_config          = local.stationary_hex_s
-    vrrp_shared_config     = local.vrrp_shared_config
-    vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-    bridge_interface       = "local-bridge"
-    dns_a_records          = local.dns_a_record
-    kuberack_dns_server    = local.kuberack_rb5009.ip
-    kuberack_network       = local.kuberack_network.network
-    kuberack_gateway       = local.kuberack_rb5009.shared_lan_ip
+    bootstrap_script         = module.bootstrap_script["stationary_hex_s"]
+    device_config            = local.stationary_hex_s
+    vrrp_shared_config       = local.vrrp_shared_config
+    vrrp_lan_static_leases   = local.vrrp_lan_static_leases_and_records
+    bridge_interface         = "local-bridge"
+    dns_a_records            = local.dns_a_record
+    kuberack_dns_server      = local.kuberack_rb5009.ip
+    kuberack_dns_server_ipv6 = local.kuberack_rb5009.ipv6
+    kuberack_network         = local.kuberack_network.network
+    kuberack_gateway         = local.kuberack_rb5009.shared_lan_ip
   }
 }
 
