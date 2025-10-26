@@ -119,14 +119,6 @@ resource "routeros_interface_list_member" "stationary_zerotier_mgmt" {
 }
 
 # Static routes for RB5009
-resource "routeros_ip_route" "kuberack_vrrp_lan_primary" {
-  provider    = routeros.kuberack
-  dst_address = "10.1.1.0/24"
-  gateway     = var.kuberack.vrrp_interface
-  distance    = 1
-  comment     = "Primary route to VRRP LAN via physical interface"
-}
-
 resource "routeros_ip_route" "kuberack_vrrp_lan_fallback" {
   provider      = routeros.kuberack
   dst_address   = "10.1.1.0/24"

@@ -97,6 +97,8 @@ module "stationary" {
     bridge_interface       = "local-bridge"
     dns_a_records          = local.dns_a_record
     kuberack_dns_server    = local.kuberack_rb5009.ip
+    kuberack_network       = local.kuberack_network.network
+    kuberack_gateway       = local.kuberack_rb5009.shared_lan_ip
   }
 }
 

@@ -25,6 +25,13 @@ module "dns" {
   ]
 }
 
+resource "routeros_ip_route" "kuberack_lan_primary" {
+  dst_address = var.kuberack_network
+  gateway     = var.kuberack_gateway
+  distance    = 1
+  comment     = "Primary route to Kuberack LAN via shared VRRP interface"
+}
+
 resource "routeros_file" "bootstrap_script" {
   name     = var.bootstrap_script.filename
   contents = var.bootstrap_script.content

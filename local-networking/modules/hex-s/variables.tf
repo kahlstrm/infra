@@ -43,3 +43,13 @@ variable "kuberack_dns_server" {
   description = "DNS server for the kuberack, used for kubernetes internal DNS resolution"
   type        = string
 }
+
+variable "kuberack_network" {
+  description = "The kuberack network CIDR (destination for routing)"
+  type        = string
+}
+
+variable "kuberack_gateway" {
+  description = "Gateway IP to reach the kuberack network via shared VRRP interface"
+  type        = string
+}
