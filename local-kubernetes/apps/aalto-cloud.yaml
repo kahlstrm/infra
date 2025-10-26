@@ -27,6 +27,27 @@ spec:
             - op: replace
               path: /spec/storageClassName
               value: local-storage
+        - target:
+            kind: Deployment
+            name: backend
+          patch: |-
+            - op: replace
+              path: /spec/template/spec/containers/0/imagePullPolicy
+              value: IfNotPresent
+        - target:
+            kind: Deployment
+            name: frontend
+          patch: |-
+            - op: replace
+              path: /spec/template/spec/containers/0/imagePullPolicy
+              value: IfNotPresent
+        - target:
+            kind: Job
+            name: db-migration
+          patch: |-
+            - op: replace
+              path: /spec/template/spec/containers/0/imagePullPolicy
+              value: IfNotPresent
 
   destination:
     server: https://kubernetes.default.svc
