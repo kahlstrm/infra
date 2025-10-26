@@ -8,12 +8,13 @@ terraform {
 resource "routeros_ip_dns" "dns" {
   allow_remote_requests = true
   cache_size            = var.use_adlist ? 40960 : 2048
-  servers = [
-    "2606:4700:4700::1111",
-    "1.1.1.1",
-    "2606:4700:4700::1001",
-    "1.0.0.1",
-  ]
+  servers = concat(var.additional_dns_servers,
+    [
+      "1.1.1.1",
+      "1.0.0.1",
+      "2606:4700:4700::1111",
+      "2606:4700:4700::1001",
+  ])
 }
 
 

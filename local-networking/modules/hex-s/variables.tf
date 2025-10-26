@@ -39,3 +39,7 @@ variable "dns_a_records" {
     include_subdomain = optional(bool)
   }))
 }
+variable "kuberack_dns_server" {
+  description = "DNS server for the kuberack, used for kubernetes internal DNS resolution"
+  type        = string
+}

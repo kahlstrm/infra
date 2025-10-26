@@ -46,6 +46,7 @@ locals {
     vrrp_priority = 100
     zerotier_ip   = "10.255.255.2"
     domain_name   = "stationary-hex-s.networking.kalski.xyz"
+    wan_interface = "ether1"
   }
   kuberack_rb5009 = {
     shared_lan_ip   = "10.1.1.2"
@@ -56,6 +57,7 @@ locals {
     vrrp_interface = "ether1"
     zerotier_ip    = "10.255.255.1"
     domain_name    = "kuberack-rb5009.networking.kalski.xyz"
+    wan_interface  = "ether8"
   }
   kuberack_network = {
     network = "10.10.10.0/24"
@@ -94,6 +96,7 @@ module "stationary" {
     vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
     bridge_interface       = "local-bridge"
     dns_a_records          = local.dns_a_record
+    kuberack_dns_server    = local.kuberack_rb5009.ip
   }
 }
 

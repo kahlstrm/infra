@@ -12,7 +12,7 @@ locals {
       shared_lan_interface            = ""
       shared_lan_ip_address_network   = ""
       shared_lan_ipv6_address_network = ""
-      wan_interface                   = "ether1"
+      wan_interface                   = local.stationary_hex_s.wan_interface
       cake_enabled                    = false
       install_zerotier                = true
       management_routes = [
@@ -33,7 +33,7 @@ locals {
       all_router_dns_records          = local.all_router_dns_records
       shared_lan_interface            = "ether1"
       shared_lan_ipv6_address_network = "${local.kuberack_rb5009.shared_lan_ipv6}/64"
-      wan_interface                   = "ether8"
+      wan_interface                   = local.kuberack_rb5009.wan_interface
       cake_enabled                    = true
       install_zerotier                = true
       management_routes               = []

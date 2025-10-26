@@ -20,5 +20,6 @@ module "hex_s" {
   vrrp_shared_config     = var.hex_s_config.vrrp_shared_config
   bridge_interface       = var.hex_s_config.bridge_interface
   dns_a_records          = var.hex_s_config.dns_a_records
+  kuberack_dns_server    = var.hex_s_config.kuberack_dns_server
 }
 
