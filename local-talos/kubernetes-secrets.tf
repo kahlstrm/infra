@@ -3,19 +3,6 @@ resource "kubernetes_namespace" "traefik" {
 
   metadata {
     name = "traefik"
-    labels = {
-      "pod-security.kubernetes.io/enforce" = "privileged"
-      "pod-security.kubernetes.io/audit"   = "privileged"
-      "pod-security.kubernetes.io/warn"    = "privileged"
-    }
-  }
-}
-
-resource "kubernetes_namespace" "external_dns" {
-  depends_on = [talos_cluster_kubeconfig.this]
-
-  metadata {
-    name = "external-dns"
   }
 }
 
@@ -29,6 +16,14 @@ resource "kubernetes_secret" "cloudflare_api_token" {
 
   data = {
     CF_DNS_API_TOKEN = local.config["cf_dns_api_token"]
+  }
+}
+
+resource "kubernetes_namespace" "external_dns" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "external-dns"
   }
 }
 

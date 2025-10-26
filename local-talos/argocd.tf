@@ -29,7 +29,8 @@ resource "helm_release" "argocd" {
 resource "null_resource" "helm_charts_ready" {
   depends_on = [
     helm_release.argocd,
-    helm_release.openebs
+    helm_release.openebs,
+    helm_release.metallb
   ]
 }
 
