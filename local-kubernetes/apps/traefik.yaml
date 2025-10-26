@@ -30,6 +30,9 @@ spec:
             expose:
               default: true
             protocol: TCP
+            redirectTo:
+              port: websecure
+              scheme: https
           websecure:
             port: 443
             hostPort: 443
