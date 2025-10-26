@@ -43,6 +43,9 @@ spec:
             trivy:
               storageClass: local-storage
               size: 5Gi
+            jobservice:
+              jobLog:
+                storageClass: local-storage
 
         database:
           type: internal
