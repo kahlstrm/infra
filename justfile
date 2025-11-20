@@ -109,8 +109,19 @@ clean dry_run="false":
 rest router method path +curl_args='':
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ -f .env ]; then
+        set -a
+        source .env
+        set +a
+    fi
     if [ -z "${MT_PASSWORD:-}" ]; then
-        echo "Error: MT_PASSWORD environment variable not set"
+        case "{{router}}" in
+            rb5009) MT_PASSWORD=${MT_PASSWORD_RB5009:-} ;;
+            hex_s)  MT_PASSWORD=${MT_PASSWORD_HEX_S:-} ;;
+        esac
+    fi
+    if [ -z "${MT_PASSWORD:-}" ]; then
+        echo "Error: no password set for router '{{router}}'. Run 'just env' to materialize MT_PASSWORD_HEX_S / MT_PASSWORD_RB5009 or export MT_PASSWORD manually." >&2
         exit 1
     fi
     case "{{router}}" in
@@ -126,3 +137,24 @@ rest router method path +curl_args='':
     esac
     METHOD="{{method}}"
     curl -sk -u "admin:$MT_PASSWORD" -X "${METHOD^^}" {{curl_args}} "$ROUTER_URL/rest/{{path}}"
+
+# Generate a local .env with RouterOS passwords from the `local-networking` secret
+[no-cd]
+env outfile=".env":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SECRET_NAME=$(basename "$(pwd)")
+    SECRET_JSON=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
+    HEX_S_PASSWORD=$(echo "$SECRET_JSON" | jq -r '.hex_s.password // empty')
+    RB5009_PASSWORD=$(echo "$SECRET_JSON" | jq -r '.rb5009.password // empty')
+    if [ -z "$HEX_S_PASSWORD" ] && [ -z "$RB5009_PASSWORD" ]; then
+        echo "Error: no hex_s.password or rb5009.password fields found in secret $SECRET_NAME" >&2
+        exit 1
+    fi
+    {
+      echo "# generated $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      [ -n "$HEX_S_PASSWORD" ] && echo "MT_PASSWORD_HEX_S=$HEX_S_PASSWORD"
+      [ -n "$RB5009_PASSWORD" ] && echo "MT_PASSWORD_RB5009=$RB5009_PASSWORD"
+    } > "{{outfile}}"
+    chmod 600 "{{outfile}}"
+    echo "Wrote {{outfile}} from secret $SECRET_NAME"
