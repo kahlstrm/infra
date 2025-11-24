@@ -58,7 +58,8 @@ resource "talos_machine_configuration_apply" "controlplane" {
       },
       local.node_config[each.key]
     )),
-    file("${path.module}/patches/openebs-controlplane.yaml")
+    file("${path.module}/patches/openebs-controlplane.yaml"),
+    file("${path.module}/patches/metrics-controlplane.yaml")
   ]
 }
 
@@ -73,7 +74,8 @@ resource "talos_machine_configuration_apply" "worker" {
       },
       local.node_config[each.key]
     )),
-    file("${path.module}/patches/openebs-worker.yaml")
+    file("${path.module}/patches/openebs-worker.yaml"),
+    file("${path.module}/patches/metrics-worker.yaml")
     ],
     lookup(local.node_config[each.key], "storage_disk_serial", null) != null ? [
       templatefile("${path.module}/templates/user-volume.yaml.tmpl", {
