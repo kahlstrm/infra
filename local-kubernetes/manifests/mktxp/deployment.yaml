@@ -15,6 +15,23 @@ spec:
       labels:
         app: mktxp-exporter
     spec:
+      initContainers:
+        - name: mktxp-config-merge
+          image: alpine:3.20
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              cat /defaults/mktxp-defaults.conf /secret/mktxp.conf > /out/mktxp.conf
+              cp /defaults/_mktxp.conf /out/_mktxp.conf
+          volumeMounts:
+            - name: mktxp-config-out
+              mountPath: /out
+            - name: mktxp-settings
+              mountPath: /defaults
+            - name: mktxp-config-secret
+              mountPath: /secret
       containers:
         - name: mktxp-exporter
           image: ghcr.io/akpw/mktxp:1.2.15
@@ -33,14 +50,12 @@ spec:
               cpu: 500m
               memory: 512Mi
           volumeMounts:
-            - name: mktxp-config
-              mountPath: /mktxp_config/mktxp.conf
-              subPath: mktxp.conf
-            - name: mktxp-settings
-              mountPath: /mktxp_config/_mktxp.conf
-              subPath: _mktxp.conf
+            - name: mktxp-config-out
+              mountPath: /mktxp_config
       volumes:
-        - name: mktxp-config
+        - name: mktxp-config-out
+          emptyDir: {}
+        - name: mktxp-config-secret
           secret:
             secretName: mktxp-config
         - name: mktxp-settings

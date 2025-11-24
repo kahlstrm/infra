@@ -61,30 +61,19 @@ resource "kubernetes_secret" "mktxp_config" {
 
   data = {
     "mktxp.conf" = <<-EOT
-      [system]
-      use_ssl = True
-      use_rest_api = True
-      check_certificate = False
-
       [rb5009]
       hostname = ${data.terraform_remote_state.networking.outputs.kuberack_domain}
+      port = 8729
       username = ${local.config["mktxp"]["username"]}
       password = ${local.config["mktxp"]["rb5009_password"]}
-      use_rest_api = True
-      ipv6_route = True
-      ipv6_pool = True
-      ipv6_firewall = True
-      ipv6_neighbor = True
+      use_ssl = True
 
       [hexs]
       hostname = ${data.terraform_remote_state.networking.outputs.stationary_domain}
+      port = 8729
       username = ${local.config["mktxp"]["username"]}
       password = ${local.config["mktxp"]["hex_s_password"]}
-      use_rest_api = True
-      ipv6_route = True
-      ipv6_pool = True
-      ipv6_firewall = True
-      ipv6_neighbor = True
+      use_ssl = True
     EOT
   }
 }
