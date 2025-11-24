@@ -68,6 +68,21 @@ spec:
 
           prometheus-node-exporter:
             namespaceOverride: monitoring-privileged
+
+          kubeEtcd:
+            enabled: true
+            service:
+              selector:
+                k8s-app: kube-controller-manager # hostNetwork pod gives node IPs without hardcoding
+            serviceMonitor:
+              scheme: http
+              relabelings:
+                - sourceLabels: [__meta_kubernetes_pod_node_name]
+                  targetLabel: nodename
+                  action: replace
+              metricRelabelings:
+                - action: labeldrop
+                  regex: pod
     - repoURL: https://github.com/kahlstrm/infra.git
       targetRevision: main
       path: local-kubernetes/manifests/monitoring-privileged
