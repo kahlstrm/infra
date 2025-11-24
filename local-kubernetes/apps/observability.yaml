@@ -13,10 +13,10 @@ spec:
       targetRevision: 79.7.1
       helm:
         values: |
-          grafana:
-            ingress:
-              enabled: true
-              ingressClassName: traefik
+        grafana:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
               hosts:
                 - grafana.kube.kalski.xyz
               annotations:
@@ -26,34 +26,20 @@ spec:
                 - secretName: grafana-tls
                   hosts:
                     - grafana.kube.kalski.xyz
-            persistence:
-              enabled: true
-              storageClassName: local-storage
-              size: 10Gi
+          persistence:
+            enabled: true
+            storageClassName: local-storage
+            size: 10Gi
+          # initChownData:
+          #   enabled: false
 
-          prometheus:
-            prometheusSpec:
-              retention: 30d
-              serviceMonitorNamespaceSelector:
-                matchNames:
-                  - monitoring
-                  - monitoring-privileged
-              podMonitorNamespaceSelector:
-                matchNames:
-                  - monitoring
-                  - monitoring-privileged
-              serviceMonitorSelector:
-                matchLabels:
-                  app.kubernetes.io/name: node-exporter
-              podMonitorSelector:
-                matchLabels:
-                  app.kubernetes.io/name: node-exporter
-              serviceMonitorSelectorNilUsesHelmValues: false
-              podMonitorSelectorNilUsesHelmValues: false
-              storageSpec:
-                volumeClaimTemplate:
-                  spec:
-                    storageClassName: local-storage
+        prometheus:
+          prometheusSpec:
+            retention: 30d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: local-storage
                     resources:
                       requests:
                         storage: 40Gi
