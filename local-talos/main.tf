@@ -11,11 +11,11 @@ locals {
   node_config = {
     "c1.k8s.kalski.xyz" = {
       install_disk  = "/dev/nvme0n1"
-      install_image = "ghcr.io/talos-rpi5/installer:v1.10.6-rpi5"
+      install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
     }
     "w1.k8s.kalski.xyz" = {
       install_disk        = "/dev/nvme0n1"
-      install_image       = "ghcr.io/siderolabs/installer:v1.10.6"
+      install_image       = "ghcr.io/siderolabs/installer:v1.11.5"
       storage_disks       = []
       storage_disk_serial = "S5GXNF0R218244B" # nvme2n1 for local-nvme StorageClass
     }
