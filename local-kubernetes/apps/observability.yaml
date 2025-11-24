@@ -58,6 +58,15 @@ spec:
 
           alertmanager:
             alertmanagerSpec:
+              # load all AlertmanagerConfig objects (no label filtering)
+              alertmanagerConfigSelector: {}
+              # but only from explicitly allowed namespaces
+              alertmanagerConfigNamespaceSelector:
+                matchExpressions:
+                  - key: kubernetes.io/metadata.name
+                    operator: In
+                    values:
+                      - monitoring
               storage:
                 volumeClaimTemplate:
                   spec:
@@ -85,7 +94,7 @@ spec:
                   regex: pod
     - repoURL: https://github.com/kahlstrm/infra.git
       targetRevision: main
-      path: local-kubernetes/manifests/monitoring-privileged
+      path: local-kubernetes/manifests/monitoring
 
   destination:
     server: https://kubernetes.default.svc

@@ -78,6 +78,20 @@ resource "kubernetes_secret" "mktxp_config" {
   }
 }
 
+resource "kubernetes_secret" "alertmanager_telegram" {
+  depends_on = [kubernetes_namespace.monitoring]
+
+  metadata {
+    name      = "alertmanager-telegram"
+    namespace = "monitoring"
+  }
+
+  data = {
+    bot_token = local.config["alertmanager_telegram"]["bot_token"]
+    chat_id   = local.config["alertmanager_telegram"]["chat_id"]
+  }
+}
+
 resource "random_password" "harbor_admin" {
   length  = 32
   special = true
