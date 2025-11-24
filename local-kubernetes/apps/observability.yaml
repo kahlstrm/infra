@@ -13,10 +13,10 @@ spec:
       targetRevision: 79.7.1
       helm:
         values: |
-        grafana:
-          ingress:
-            enabled: true
-            ingressClassName: traefik
+          grafana:
+            ingress:
+              enabled: true
+              ingressClassName: traefik
               hosts:
                 - grafana.kube.kalski.xyz
               annotations:
@@ -26,20 +26,25 @@ spec:
                 - secretName: grafana-tls
                   hosts:
                     - grafana.kube.kalski.xyz
-          persistence:
-            enabled: true
-            storageClassName: local-storage
-            size: 10Gi
-          # initChownData:
-          #   enabled: false
+            persistence:
+              enabled: true
+              storageClassName: local-storage
+              size: 10Gi
+            initChownData:
+              enabled: false
+            podSecurityContext:
+              runAsUser: 472
+              runAsGroup: 472
+              fsGroup: 472
+              fsGroupChangePolicy: OnRootMismatch
 
-        prometheus:
-          prometheusSpec:
-            retention: 30d
-            storageSpec:
-              volumeClaimTemplate:
-                spec:
-                  storageClassName: local-storage
+          prometheus:
+            prometheusSpec:
+              retention: 30d
+              storageSpec:
+                volumeClaimTemplate:
+                  spec:
+                    storageClassName: local-storage
                     resources:
                       requests:
                         storage: 40Gi
