@@ -26,6 +26,13 @@ spec:
                 - secretName: grafana-tls
                   hosts:
                     - grafana.kube.kalski.xyz
+            serviceMonitor:
+              enabled: true
+              labels:
+                release: observability
+              interval: 30s
+              scrapeTimeout: 10s
+              path: /metrics
             persistence:
               enabled: true
               storageClassName: local-storage
