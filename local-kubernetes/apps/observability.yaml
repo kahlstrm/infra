@@ -67,6 +67,9 @@ spec:
                     operator: In
                     values:
                       - monitoring
+              # avoid auto-injected namespace matchers so cluster-wide alerts can route
+              alertmanagerConfigMatcherStrategy:
+                type: None
               storage:
                 volumeClaimTemplate:
                   spec:
