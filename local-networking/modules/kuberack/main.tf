@@ -24,4 +24,3 @@ module "rb5009" {
   dns_a_records          = var.rb5009_config.dns_a_records
   wan_interface          = var.rb5009_config.wan_interface
 }
-

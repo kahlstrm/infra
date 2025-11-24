@@ -123,6 +123,24 @@ module "zerotier" {
   }
 }
 
+module "mktxp_kuberack" {
+  source = "./modules/mktxp-user"
+  providers = {
+    routeros = routeros.kuberack_rb5009
+  }
+  username = local.config["mktxp"]["username"]
+  password = local.config["mktxp"]["rb5009_password"]
+}
+
+module "mktxp_stationary" {
+  source = "./modules/mktxp-user"
+  providers = {
+    routeros = routeros.stationary_hex_s
+  }
+  username = local.config["mktxp"]["username"]
+  password = local.config["mktxp"]["hex_s_password"]
+}
+
 module "kuberack" {
   source = "./modules/kuberack"
   providers = {
@@ -163,4 +181,3 @@ module "kuberack_rb5009_cert" {
   cf_dns_api_token = local.config["cf_dns_api_token"]
   domain           = local.kuberack_rb5009.domain_name
 }
-

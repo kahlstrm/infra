@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mktxp-settings
+  namespace: monitoring
+data:
+  _mktxp.conf: |
+    [MKTXP]
+        listen = '0.0.0.0:49090'
+        socket_timeout = 5
+        initial_delay_on_failure = 30
+        max_delay_on_failure = 600
+        delay_inc_div = 5
+        bandwidth = False
+        minimal_collect_interval = 5
+        verbose_mode = False
+        fetch_routers_in_parallel = False
+        persistent_router_connection_pool = True

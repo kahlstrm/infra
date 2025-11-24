@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mktxp-exporter
+  namespace: monitoring
+  labels:
+    app: mktxp-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mktxp-exporter
+  template:
+    metadata:
+      labels:
+        app: mktxp-exporter
+    spec:
+      containers:
+        - name: mktxp-exporter
+          image: ghcr.io/akpw/mktxp:1.2.15
+          args:
+            - --cfg-dir
+            - /mktxp_config
+            - export
+          ports:
+            - name: http
+              containerPort: 49090
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: mktxp-config
+              mountPath: /mktxp_config/mktxp.conf
+              subPath: mktxp.conf
+            - name: mktxp-settings
+              mountPath: /mktxp_config/_mktxp.conf
+              subPath: _mktxp.conf
+      volumes:
+        - name: mktxp-config
+          secret:
+            secretName: mktxp-config
+        - name: mktxp-settings
+          configMap:
+            name: mktxp-settings

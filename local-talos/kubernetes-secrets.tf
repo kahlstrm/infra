@@ -43,6 +43,52 @@ resource "kubernetes_secret" "mikrotik_credentials" {
   }
 }
 
+resource "kubernetes_namespace" "monitoring" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "monitoring"
+  }
+}
+
+resource "kubernetes_secret" "mktxp_config" {
+  depends_on = [kubernetes_namespace.monitoring]
+
+  metadata {
+    name      = "mktxp-config"
+    namespace = "monitoring"
+  }
+
+  data = {
+    "mktxp.conf" = <<-EOT
+      [system]
+      use_ssl = True
+      use_rest_api = True
+      check_certificate = False
+
+      [rb5009]
+      hostname = ${data.terraform_remote_state.networking.outputs.kuberack_domain}
+      username = ${local.config["mktxp"]["username"]}
+      password = ${local.config["mktxp"]["rb5009_password"]}
+      use_rest_api = True
+      ipv6_route = True
+      ipv6_pool = True
+      ipv6_firewall = True
+      ipv6_neighbor = True
+
+      [hexs]
+      hostname = ${data.terraform_remote_state.networking.outputs.stationary_domain}
+      username = ${local.config["mktxp"]["username"]}
+      password = ${local.config["mktxp"]["hex_s_password"]}
+      use_rest_api = True
+      ipv6_route = True
+      ipv6_pool = True
+      ipv6_firewall = True
+      ipv6_neighbor = True
+    EOT
+  }
+}
+
 resource "random_password" "harbor_admin" {
   length  = 32
   special = true
