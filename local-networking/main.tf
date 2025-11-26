@@ -38,7 +38,12 @@ locals {
 
   kuberack_lan_static_leases_and_records = merge(
     local.k8s_control_plane_nodes,
-    local.k8s_worker_nodes
+    local.k8s_worker_nodes, {
+      "jet.k8s.kalski.xyz" = {
+        ip          = "10.10.10.5"
+        mac_address = local.config["kuberack_jetkvm_mac_address"]
+      }
+    }
   )
   stationary_hex_s = {
     ip = "10.1.1.3"
