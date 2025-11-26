@@ -10,29 +10,33 @@ locals {
   vrrp_lan_static_leases_and_records = {
     "p.kalski.xyz" = {
       ip                = "10.1.1.10"
-      mac_address       = local.config["pannu_mac_address"]
+      mac_address       = local.config["macs"]["pannu"]
       include_subdomain = true
     },
     "jet.kalski.xyz" = {
       ip          = "10.1.1.11"
-      mac_address = local.config["jetkvm_mac_address"]
+      mac_address = local.config["macs"]["jetkvm"]
     },
     "ha.kalski.xyz" = {
       ip          = "10.1.1.20"
-      mac_address = local.config["ha_pi_mac_address"]
+      mac_address = local.config["macs"]["ha_pi"]
+    }
+    "zima.kalski.xyz" = {
+      ip          = "10.1.1.30"
+      mac_address = local.config["macs"]["zima"]
     }
   }
   k8s_control_plane_nodes = {
     "c1.k8s.kalski.xyz" = {
       ip          = "10.10.10.11"
-      mac_address = local.config["c1_k8s_mac_address"]
+      mac_address = local.config["macs"]["c1_k8s"]
     }
   }
 
   k8s_worker_nodes = {
     "w1.k8s.kalski.xyz" = {
       ip          = "10.10.10.21"
-      mac_address = local.config["w1_k8s_mac_address"]
+      mac_address = local.config["macs"]["w1_k8s"]
     }
   }
 
@@ -41,7 +45,7 @@ locals {
     local.k8s_worker_nodes, {
       "jet.k8s.kalski.xyz" = {
         ip          = "10.10.10.5"
-        mac_address = local.config["kuberack_jetkvm_mac_address"]
+        mac_address = local.config["macs"]["kuberack_jetkvm"]
       }
     }
   )
