@@ -43,6 +43,22 @@ resource "kubernetes_secret" "mikrotik_credentials" {
   }
 }
 
+resource "kubernetes_secret" "mikrotik_credentials_hex_s" {
+  depends_on = [kubernetes_namespace.external_dns]
+
+  metadata {
+    name      = "mikrotik-credentials-hex-s"
+    namespace = "external-dns"
+  }
+
+  data = {
+    MIKROTIK_BASEURL         = "https://${data.terraform_remote_state.networking.outputs.stationary_domain}"
+    MIKROTIK_USERNAME        = data.terraform_remote_state.networking.outputs.external_dns_username
+    MIKROTIK_PASSWORD        = local.config["external_dns_password"]
+    MIKROTIK_SKIP_TLS_VERIFY = "true"
+  }
+}
+
 resource "kubernetes_namespace" "monitoring" {
   depends_on = [talos_cluster_kubeconfig.this]
 

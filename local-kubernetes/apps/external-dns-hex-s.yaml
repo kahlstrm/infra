@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: external-dns
+  name: external-dns-hex-s
   namespace: argocd
 spec:
   project: default
@@ -12,7 +12,7 @@ spec:
     targetRevision: 1.18.0
     helm:
       values: |
-        fullnameOverride: external-dns-mikrotik
+        fullnameOverride: external-dns-hex-s
 
         logLevel: debug
         logFormat: text
@@ -36,22 +36,22 @@ spec:
               - name: MIKROTIK_BASEURL
                 valueFrom:
                   secretKeyRef:
-                    name: mikrotik-credentials
+                    name: mikrotik-credentials-hex-s
                     key: MIKROTIK_BASEURL
               - name: MIKROTIK_USERNAME
                 valueFrom:
                   secretKeyRef:
-                    name: mikrotik-credentials
+                    name: mikrotik-credentials-hex-s
                     key: MIKROTIK_USERNAME
               - name: MIKROTIK_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: mikrotik-credentials
+                    name: mikrotik-credentials-hex-s
                     key: MIKROTIK_PASSWORD
               - name: MIKROTIK_SKIP_TLS_VERIFY
                 valueFrom:
                   secretKeyRef:
-                    name: mikrotik-credentials
+                    name: mikrotik-credentials-hex-s
                     key: MIKROTIK_SKIP_TLS_VERIFY
             livenessProbe:
               httpGet:

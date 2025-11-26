@@ -25,4 +25,3 @@ module "hex_s" {
   kuberack_network         = var.hex_s_config.kuberack_network
   kuberack_gateway         = var.hex_s_config.kuberack_gateway
 }
-

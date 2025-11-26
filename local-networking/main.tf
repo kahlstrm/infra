@@ -150,6 +150,22 @@ module "mktxp_stationary" {
   password = local.config["mktxp"]["hex_s_password"]
 }
 
+module "external_dns_kuberack" {
+  source = "./modules/external-dns-user"
+  providers = {
+    routeros = routeros.kuberack_rb5009
+  }
+  external_dns_password = local.config["external_dns_password"]
+}
+
+module "external_dns_hex_s" {
+  source = "./modules/external-dns-user"
+  providers = {
+    routeros = routeros.stationary_hex_s
+  }
+  external_dns_password = local.config["external_dns_password"]
+}
+
 module "kuberack" {
   source = "./modules/kuberack"
   providers = {
@@ -166,7 +182,6 @@ module "kuberack" {
     dns_a_records          = local.dns_a_record
     wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
   }
-  external_dns_password = local.config["external_dns_password"]
 }
 
 module "stationary_hex_s_cert" {
