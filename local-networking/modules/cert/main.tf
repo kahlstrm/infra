@@ -31,6 +31,17 @@ resource "routeros_system_certificate" "external" {
   }
 }
 
+resource "routeros_system_certificate" "external_issuer" {
+  name        = "${acme_certificate.cert.common_name}.issuer.crt"
+  common_name = "issuer"
+  import {
+    cert_file_content = acme_certificate.cert.issuer_pem
+  }
+  lifecycle {
+    ignore_changes = [common_name]
+  }
+}
+
 # Enable HTTPS WebFig with that cert; disable plain HTTP
 resource "routeros_ip_service" "www" {
   numbers  = "www"
