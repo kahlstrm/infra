@@ -22,7 +22,7 @@ spec:
         values: |
           tenant:
             name: minio
-            configuration:
+            configSecret:
               name: minio-env-configuration
             pools:
               - name: pool-0
