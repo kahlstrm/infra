@@ -133,6 +133,7 @@ resource "kubernetes_secret" "minio_env_configuration" {
     "config.env" = <<-EOT
       export MINIO_ROOT_USER=admin
       export MINIO_ROOT_PASSWORD=${random_password.minio_root.result}
+      export MINIO_PROMETHEUS_AUTH_TYPE=public
     EOT
   }
 }
