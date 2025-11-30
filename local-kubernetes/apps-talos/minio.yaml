@@ -39,12 +39,20 @@ spec:
               enabled: true
               ingressClassName: private
               host: minio.kube.kalski.xyz
+              tls:
+                - secretName: minio-api-tls
+                  hosts:
+                    - minio.kube.kalski.xyz
               annotations:
                 cert-manager.io/cluster-issuer: letsencrypt
             console:
               enabled: true
               ingressClassName: private
               host: minio-console.kube.kalski.xyz
+              tls:
+                - secretName: minio-console-tls
+                  hosts:
+                    - minio-console.kube.kalski.xyz
               annotations:
                 cert-manager.io/cluster-issuer: letsencrypt
 
