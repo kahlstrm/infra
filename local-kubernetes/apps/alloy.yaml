@@ -13,9 +13,6 @@ spec:
       helm:
         values: |
           alloy:
-            mounts:
-              varlog: true
-
             configMap:
               content: |
                 // Discover Kubernetes pods
