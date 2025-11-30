@@ -16,6 +16,8 @@ spec:
 
           loki:
             auth_enabled: false
+            ingester:
+              replication_factor: 1
             schemaConfig:
               configs:
                 - from: "2024-04-01"
