@@ -176,8 +176,9 @@ resource "kubernetes_secret" "loki_s3_credentials" {
   data = {
     AWS_ACCESS_KEY_ID     = "loki"
     AWS_SECRET_ACCESS_KEY = random_password.minio_loki.result
-    AWS_ENDPOINT_URL      = "http://minio.minio.svc:80"
+    AWS_ENDPOINT_URL      = "minio.minio.svc:80"
     AWS_REGION            = "us-east-1"
+    AWS_S3_INSECURE       = "true"
   }
 }
 
