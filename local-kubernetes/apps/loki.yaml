@@ -1,0 +1,85 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki
+    targetRevision: 6.46.0
+    helm:
+      values: |
+        deploymentMode: SimpleScalable
+
+        loki:
+          auth_enabled: false
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+          storage:
+            type: s3
+            s3:
+              s3ForcePathStyle: true
+            bucketNames:
+              chunks: loki
+              ruler: loki
+              admin: loki
+          storage_config:
+            tsdb_shipper:
+              active_index_directory: /var/loki/tsdb-index
+              cache_location: /var/loki/tsdb-cache
+
+        backend:
+          replicas: 1
+          persistence:
+            storageClass: local-storage
+          extraEnvFrom:
+            - secretRef:
+                name: loki-s3-credentials
+
+        read:
+          replicas: 1
+          extraEnvFrom:
+            - secretRef:
+                name: loki-s3-credentials
+
+        write:
+          replicas: 1
+          persistence:
+            storageClass: local-storage
+          extraEnvFrom:
+            - secretRef:
+                name: loki-s3-credentials
+
+        singleBinary:
+          replicas: 0
+
+        minio:
+          enabled: false
+
+        resultsCache:
+          enabled: false
+
+        chunksCache:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: loki
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

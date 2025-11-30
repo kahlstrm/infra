@@ -34,6 +34,10 @@ spec:
             requestAutoCert: false
             certificate:
               requestAutoCert: false
+            buckets:
+              - name: loki
+            users:
+              - name: minio-loki-user
             exposeServices:
               console: true
               minio: true

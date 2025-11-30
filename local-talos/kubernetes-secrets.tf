@@ -138,6 +138,49 @@ resource "kubernetes_secret" "minio_env_configuration" {
   }
 }
 
+resource "random_password" "minio_loki" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_secret" "minio_loki_user" {
+  depends_on = [kubernetes_namespace.minio]
+
+  metadata {
+    name      = "minio-loki-user"
+    namespace = "minio"
+  }
+
+  data = {
+    CONSOLE_ACCESS_KEY = "loki"
+    CONSOLE_SECRET_KEY = random_password.minio_loki.result
+  }
+}
+
+resource "kubernetes_namespace" "loki" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "loki"
+  }
+}
+
+resource "kubernetes_secret" "loki_s3_credentials" {
+  depends_on = [kubernetes_namespace.loki]
+
+  metadata {
+    name      = "loki-s3-credentials"
+    namespace = "loki"
+  }
+
+  data = {
+    AWS_ACCESS_KEY_ID     = "loki"
+    AWS_SECRET_ACCESS_KEY = random_password.minio_loki.result
+    AWS_ENDPOINT_URL      = "http://minio.minio.svc:80"
+    AWS_REGION            = "us-east-1"
+  }
+}
+
 resource "random_password" "harbor_admin" {
   length  = 32
   special = true
