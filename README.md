@@ -34,11 +34,44 @@ This repository is an experimental playground for managing a personal hardware s
 
 ## Architecture
 
-This infrastructure uses a **layered approach**:
+This infrastructure uses a **layered approach** where infrastructure-specific services are separated from portable applications:
 
-1. **`local-networking/`** - Network foundation (MikroTik routers, DHCP, DNS)
-2. **`local-talos/`** - Talos cluster provisioning (nodes, bootstrap)
-3. **`local-kubernetes/`** - Kubernetes workload management _(planned)_
+```
+local-networking/          # Network foundation (MikroTik routers, DHCP, DNS, VPN)
+local-talos/               # Cluster primitives (Talos nodes, ArgoCD, OpenEBS, MetalLB)
+local-kubernetes/
+  ├── apps-talos/          # Platform services (Talos-specific)
+  └── apps/                # Portable applications
+```
+
+### Cluster Primitives vs Platform Services vs Applications
+
+**Cluster Primitives** (`local-talos/`, Terraform): Must exist before anything else works. Deployed via Terraform to guarantee ordering.
+- ArgoCD (GitOps bootstrap)
+- OpenEBS (storage - PVCs don't work without it)
+- MetalLB (networking - LoadBalancer services don't work without it)
+
+**Platform Services** (`apps-talos/`, ArgoCD): Talos-specific services that would be replaced by managed services on cloud platforms.
+- cert-manager (TLS certificates)
+- Traefik (ingress controller)
+- MinIO (object storage)
+- Harbor (container registry)
+
+**Applications** (`apps/`, ArgoCD): Portable workloads that work on any platform with the right services available.
+- External-DNS (MikroTik DNS - same provider everywhere)
+- Observability stack
+
+### Platform Services by Environment
+
+| Service | Local (Talos) | AWS | Hetzner |
+|---------|---------------|-----|---------|
+| Block Storage | OpenEBS | EBS CSI | Hetzner CSI |
+| Load Balancer | MetalLB | (built-in) | Hetzner LB |
+| TLS Certs | cert-manager | cert-manager | cert-manager |
+| Ingress | Traefik | ALB Controller | Traefik |
+| Object Storage | MinIO | S3 | Hetzner Object Storage |
+| Container Registry | Harbor | ECR | Harbor |
+| DNS Management | External-DNS (MikroTik) | External-DNS (Route53) | External-DNS (Cloudflare) |
 
 ## Getting Started
 

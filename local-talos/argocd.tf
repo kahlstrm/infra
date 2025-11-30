@@ -68,6 +68,40 @@ resource "kubernetes_manifest" "argocd_bootstrap" {
   }
 }
 
+resource "kubernetes_manifest" "argocd_bootstrap_talos" {
+  depends_on = [null_resource.helm_charts_ready]
+
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "bootstrap-talos"
+      namespace = "argocd"
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/kahlstrm/infra.git"
+        targetRevision = "main"
+        path           = "local-kubernetes/apps-talos"
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "argocd"
+      }
+      syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
+        syncOptions = [
+          "CreateNamespace=true"
+        ]
+      }
+    }
+  }
+}
+
 data "kubernetes_secret" "argocd_initial_admin_secret" {
   depends_on = [null_resource.helm_charts_ready]
 

@@ -1,24 +1,3 @@
-resource "kubernetes_namespace" "traefik" {
-  depends_on = [talos_cluster_kubeconfig.this]
-
-  metadata {
-    name = "traefik"
-  }
-}
-
-resource "kubernetes_secret" "cloudflare_api_token" {
-  depends_on = [kubernetes_namespace.traefik]
-
-  metadata {
-    name      = "cloudflare-api-token"
-    namespace = "traefik"
-  }
-
-  data = {
-    CF_DNS_API_TOKEN = local.config["cf_dns_api_token"]
-  }
-}
-
 resource "kubernetes_namespace" "external_dns" {
   depends_on = [talos_cluster_kubeconfig.this]
 
@@ -105,6 +84,56 @@ resource "kubernetes_secret" "alertmanager_telegram" {
   data = {
     bot_token = local.config["alertmanager_telegram"]["bot_token"]
     chat_id   = local.config["alertmanager_telegram"]["chat_id"]
+  }
+}
+
+resource "kubernetes_namespace" "cert_manager" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "cert-manager"
+  }
+}
+
+resource "kubernetes_secret" "cloudflare_api_token_cert_manager" {
+  depends_on = [kubernetes_namespace.cert_manager]
+
+  metadata {
+    name      = "cloudflare-api-token"
+    namespace = "cert-manager"
+  }
+
+  data = {
+    api-token = local.config["cf_dns_api_token"]
+  }
+}
+
+resource "random_password" "minio_root" {
+  length  = 32
+  special = false
+}
+
+resource "kubernetes_namespace" "minio" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "minio"
+  }
+}
+
+resource "kubernetes_secret" "minio_env_configuration" {
+  depends_on = [kubernetes_namespace.minio]
+
+  metadata {
+    name      = "minio-env-configuration"
+    namespace = "minio"
+  }
+
+  data = {
+    "config.env" = <<-EOT
+      export MINIO_ROOT_USER=admin
+      export MINIO_ROOT_PASSWORD=${random_password.minio_root.result}
+    EOT
   }
 }
 

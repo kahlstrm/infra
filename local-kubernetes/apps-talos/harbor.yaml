@@ -16,14 +16,15 @@ spec:
           type: ingress
           tls:
             enabled: true
-            certSource: none
+            certSource: secret
+            secret:
+              secretName: harbor-tls
           ingress:
-            className: traefik
+            className: private
             hosts:
               core: harbor.kube.kalski.xyz
             annotations:
-              traefik.ingress.kubernetes.io/router.entrypoints: websecure
-              traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+              cert-manager.io/cluster-issuer: letsencrypt
 
         externalURL: https://harbor.kube.kalski.xyz
 

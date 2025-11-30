@@ -30,7 +30,7 @@ resource "kubernetes_manifest" "metallb_ipaddresspool" {
     apiVersion = "metallb.io/v1beta1"
     kind       = "IPAddressPool"
     metadata = {
-      name      = "default-pool"
+      name      = "private-pool"
       namespace = "metallb-system"
     }
     spec = {
@@ -48,12 +48,12 @@ resource "kubernetes_manifest" "metallb_l2advertisement" {
     apiVersion = "metallb.io/v1beta1"
     kind       = "L2Advertisement"
     metadata = {
-      name      = "default"
+      name      = "private"
       namespace = "metallb-system"
     }
     spec = {
       ipAddressPools = [
-        "default-pool"
+        "private-pool"
       ]
     }
   }

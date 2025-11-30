@@ -16,12 +16,11 @@ spec:
           grafana:
             ingress:
               enabled: true
-              ingressClassName: traefik
+              ingressClassName: private
               hosts:
                 - grafana.kube.kalski.xyz
               annotations:
-                traefik.ingress.kubernetes.io/router.entrypoints: websecure
-                traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+                cert-manager.io/cluster-issuer: letsencrypt
               tls:
                 - secretName: grafana-tls
                   hosts:

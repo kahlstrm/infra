@@ -3,10 +3,13 @@ kind: Ingress
 metadata:
   name: argocd-server
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
-  ingressClassName: traefik
+  ingressClassName: private
+  tls:
+    - hosts:
+        - argo.kube.kalski.xyz
+      secretName: argocd-server-tls
   rules:
     - host: argo.kube.kalski.xyz
       http:
