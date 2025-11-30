@@ -6,71 +6,75 @@ metadata:
 spec:
   project: default
 
-  source:
-    repoURL: https://grafana.github.io/helm-charts
-    chart: loki
-    targetRevision: 6.46.0
-    helm:
-      values: |
-        deploymentMode: SimpleScalable
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: 6.46.0
+      helm:
+        values: |
+          deploymentMode: SimpleScalable
 
-        loki:
-          auth_enabled: false
-          schemaConfig:
-            configs:
-              - from: "2024-04-01"
-                store: tsdb
-                object_store: s3
-                schema: v13
-                index:
-                  prefix: loki_index_
-                  period: 24h
-          storage:
-            type: s3
-            s3:
-              s3ForcePathStyle: true
-            bucketNames:
-              chunks: loki
-              ruler: loki
-              admin: loki
-          storage_config:
-            tsdb_shipper:
-              active_index_directory: /var/loki/tsdb-index
-              cache_location: /var/loki/tsdb-cache
+          loki:
+            auth_enabled: false
+            schemaConfig:
+              configs:
+                - from: "2024-04-01"
+                  store: tsdb
+                  object_store: s3
+                  schema: v13
+                  index:
+                    prefix: loki_index_
+                    period: 24h
+            storage:
+              type: s3
+              s3:
+                s3ForcePathStyle: true
+              bucketNames:
+                chunks: loki
+                ruler: loki
+                admin: loki
+            storage_config:
+              tsdb_shipper:
+                active_index_directory: /var/loki/tsdb-index
+                cache_location: /var/loki/tsdb-cache
 
-        backend:
-          replicas: 1
-          persistence:
-            storageClass: local-storage
-          extraEnvFrom:
-            - secretRef:
-                name: loki-s3-credentials
+          backend:
+            replicas: 1
+            persistence:
+              storageClass: local-storage
+            extraEnvFrom:
+              - secretRef:
+                  name: loki-s3-credentials
 
-        read:
-          replicas: 1
-          extraEnvFrom:
-            - secretRef:
-                name: loki-s3-credentials
+          read:
+            replicas: 1
+            extraEnvFrom:
+              - secretRef:
+                  name: loki-s3-credentials
 
-        write:
-          replicas: 1
-          persistence:
-            storageClass: local-storage
-          extraEnvFrom:
-            - secretRef:
-                name: loki-s3-credentials
+          write:
+            replicas: 1
+            persistence:
+              storageClass: local-storage
+            extraEnvFrom:
+              - secretRef:
+                  name: loki-s3-credentials
 
-        singleBinary:
-          replicas: 0
+          singleBinary:
+            replicas: 0
 
-        minio:
-          enabled: false
+          minio:
+            enabled: false
 
-        resultsCache:
-          enabled: false
+          resultsCache:
+            enabled: false
 
-        chunksCache:
-          enabled: false
+          chunksCache:
+            enabled: false
+
+    - repoURL: https://github.com/kahlstrm/infra.git
+      targetRevision: main
+      path: local-kubernetes/manifests/loki
 
   destination:
     server: https://kubernetes.default.svc
