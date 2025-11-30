@@ -43,6 +43,12 @@ spec:
               runAsGroup: 472
               fsGroup: 472
               fsGroupChangePolicy: OnRootMismatch
+            additionalDataSources:
+              - name: Loki
+                type: loki
+                url: http://loki-read.loki.svc:3100
+                access: proxy
+                isDefault: false
 
           prometheus:
             prometheusSpec:
