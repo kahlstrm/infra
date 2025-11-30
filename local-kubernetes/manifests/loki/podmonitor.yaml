@@ -11,3 +11,8 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: loki
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: NotIn
+        values:
+          - gateway
