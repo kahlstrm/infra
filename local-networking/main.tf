@@ -22,8 +22,9 @@ locals {
       mac_address = local.config["macs"]["ha_pi"]
     }
     "zima.kalski.xyz" = {
-      ip          = "10.1.1.30"
-      mac_address = local.config["macs"]["zima"]
+      ip                = "10.1.1.30"
+      mac_address       = local.config["macs"]["zima"]
+      include_subdomain = true
     }
   }
   k8s_control_plane_nodes = {
