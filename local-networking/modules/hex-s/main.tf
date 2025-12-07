@@ -20,10 +20,6 @@ module "dns" {
   source     = "../dns"
   a_records  = var.dns_a_records
   use_adlist = true
-  additional_dns_servers = [
-    var.kuberack_dns_server,
-    var.kuberack_dns_server_ipv6
-  ]
 }
 
 resource "routeros_ip_route" "kuberack_lan_primary" {
@@ -37,4 +33,3 @@ resource "routeros_file" "bootstrap_script" {
   name     = var.bootstrap_script.filename
   contents = var.bootstrap_script.content
 }
-

@@ -10,6 +10,18 @@ variable "use_adlist" {
   type        = bool
 }
 
+variable "use_doh_server" {
+  description = "DNS-over-HTTPS endpoint URL. Set null to disable DoH."
+  type        = string
+  default     = "https://cloudflare-dns.com/dns-query"
+}
+
+variable "verify_doh_cert" {
+  description = "Verify the TLS certificate of the DoH server using RouterOS trust store."
+  type        = bool
+  default     = true
+}
+
 variable "additional_dns_servers" {
   description = "Additional DNS servers that are going to be queried first before the others."
   type        = list(string)
