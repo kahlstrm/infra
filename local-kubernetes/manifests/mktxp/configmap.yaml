@@ -11,7 +11,7 @@ data:
         initial_delay_on_failure = 30
         max_delay_on_failure = 600
         delay_inc_div = 5
-        bandwidth = True
+        bandwidth = False
         minimal_collect_interval = 5
         verbose_mode = False
         fetch_routers_in_parallel = False
