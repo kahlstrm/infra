@@ -114,6 +114,8 @@
 /ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no use-peer-dns=no comment="bootstrap"
 /ipv6 nd add interface=$wanInterface advertise-dns=no advertise-mac-address=no
 /ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName advertise=yes comment="bootstrap"
+# Trust built-in root CAs (RouterOS >=7.19) so DoH/adlist HTTPS verification works
+/certificate/settings set builtin-trust-anchors=trusted
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
