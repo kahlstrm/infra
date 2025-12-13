@@ -32,6 +32,14 @@ locals {
       ip          = "10.10.10.11"
       mac_address = local.config["macs"]["c1_k8s"]
     }
+    "c2.k8s.kalski.xyz" = {
+      ip          = "10.10.10.12"
+      mac_address = local.config["macs"]["c2_k8s"]
+    }
+    "c3.k8s.kalski.xyz" = {
+      ip          = "10.10.10.13"
+      mac_address = local.config["macs"]["c3_k8s"]
+    }
   }
 
   k8s_worker_nodes = {

@@ -7,12 +7,26 @@ locals {
   # Enable replicated storage (requires 3+ worker nodes)
   enable_replicated_storage = local.openebs_control_plane_replicas >= 3
 
-  # Node-specific configuration
-  node_config = {
+  # Node that does the talos cluster bootstrap
+  bootstrap_node = "c1.k8s.kalski.xyz"
+
+  control_plane_node_config = {
     "c1.k8s.kalski.xyz" = {
       install_disk  = "/dev/nvme0n1"
       install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
     }
+    "c2.k8s.kalski.xyz" = {
+      install_disk  = "/dev/nvme0n1"
+      install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
+    }
+    "c3.k8s.kalski.xyz" = {
+      install_disk  = "/dev/nvme0n1"
+      install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
+    }
+  }
+
+  # Node-specific configuration
+  worker_node_config = {
     "w1.k8s.kalski.xyz" = {
       install_disk        = "/dev/nvme0n1"
       install_image       = "ghcr.io/siderolabs/installer:v1.11.5"
@@ -43,20 +57,19 @@ data "talos_machine_configuration" "worker" {
 data "talos_client_configuration" "this" {
   cluster_name         = local.cluster_name
   client_configuration = talos_machine_secrets.salaisuudet.client_configuration
-  endpoints            = [for hostname, node in local.k8s_controlplanes : node.ip]
-  nodes                = [[for hostname, node in local.k8s_controlplanes : node.ip][0]]
+  endpoints            = [for hostname, node in local.control_plane_node_config : hostname]
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
   client_configuration        = talos_machine_secrets.salaisuudet.client_configuration
   machine_configuration_input = data.talos_machine_configuration.controlplane.machine_configuration
-  for_each                    = local.k8s_controlplanes
-  node                        = each.value.ip
+  for_each                    = local.control_plane_node_config
+  node                        = local.k8s_controlplanes[each.key].ip
   config_patches = [
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", merge({
       hostname = each.key
       },
-      local.node_config[each.key]
+      each.value
     )),
     file("${path.module}/patches/openebs-controlplane.yaml"),
     file("${path.module}/patches/metrics-controlplane.yaml")
@@ -66,36 +79,36 @@ resource "talos_machine_configuration_apply" "controlplane" {
 resource "talos_machine_configuration_apply" "worker" {
   client_configuration        = talos_machine_secrets.salaisuudet.client_configuration
   machine_configuration_input = data.talos_machine_configuration.worker.machine_configuration
-  for_each                    = local.k8s_workers
-  node                        = each.value.ip
+  for_each                    = local.worker_node_config
+  node                        = local.k8s_workers[each.key].ip
   config_patches = concat([
     templatefile("${path.module}/templates/install-disk-and-hostname.yaml.tmpl", merge({
       hostname = each.key
       },
-      local.node_config[each.key]
+      each.value
     )),
     file("${path.module}/patches/openebs-worker.yaml"),
     file("${path.module}/patches/metrics-worker.yaml")
     ],
-    lookup(local.node_config[each.key], "storage_disk_serial", null) != null ? [
+    lookup(each.value, "storage_disk_serial", null) != null ? [
       templatefile("${path.module}/templates/user-volume.yaml.tmpl", {
-        storage_disk_serial = local.node_config[each.key].storage_disk_serial
+        storage_disk_serial = each.value.storage_disk_serial
       })
     ] : []
   )
 }
 
+# WARNING:there should be just one of there per cluster
 resource "talos_machine_bootstrap" "this" {
-  depends_on = [talos_machine_configuration_apply.controlplane]
-
+  depends_on           = [talos_machine_configuration_apply.controlplane]
   client_configuration = talos_machine_secrets.salaisuudet.client_configuration
-  node                 = [for hostname, node in local.k8s_controlplanes : node.ip][0]
+  node                 = local.k8s_controlplanes[local.bootstrap_node].ip
 }
 
 resource "talos_cluster_kubeconfig" "this" {
   depends_on           = [talos_machine_bootstrap.this]
   client_configuration = talos_machine_secrets.salaisuudet.client_configuration
-  node                 = [for hostname, node in local.k8s_controlplanes : node.ip][0]
+  node                 = local.k8s_controlplanes[local.bootstrap_node].ip
 }
 
 resource "helm_release" "openebs" {
@@ -140,7 +153,7 @@ resource "helm_release" "openebs" {
 locals {
   # Flatten node storage configuration for disk pool creation
   storage_disks = flatten([
-    for hostname, config in local.node_config : [
+    for hostname, config in local.worker_node_config : [
       for idx, disk in lookup(config, "storage_disks", []) : {
         hostname = hostname
         disk     = disk

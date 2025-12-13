@@ -19,18 +19,27 @@ talosctl get disks --insecure --nodes <node-ip>
 
 ### 2. Update Node Configuration
 
-Edit `main.tf` and update the `node_config` local with the correct disk paths:
+Edit `main.tf` and update the `control_plane_node_config` and `worker_node_config` locals with the correct disk paths and installer images:
 
 ```hcl
-node_config = {
+bootstrap_node = "c1.k8s.kalski.xyz"
+
+control_plane_node_config = {
   "c1.k8s.kalski.xyz" = {
-    talos_install_disk = "/dev/mmcblk0"
+    install_disk  = "/dev/nvme0n1"
+    install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
   }
+}
+
+worker_node_config = {
   "w1.k8s.kalski.xyz" = {
-    talos_install_disk = "/dev/nvme1n1"
+    install_disk  = "/dev/nvme0n1"
+    install_image = "ghcr.io/siderolabs/installer:v1.11.5"
   }
 }
 ```
+
+`bootstrap_node` must be set to exactly one control plane hostname (used for `talos_machine_bootstrap` and kubeconfig retrieval).
 
 ### 3. Bootstrap Cluster
 
@@ -68,11 +77,16 @@ Add the new node to the local-networking configuration:
 
 ```hcl
 # In local-networking/main.tf
+k8s_control_plane_nodes = {
+  "c1.k8s.kalski.xyz" = { ... }
+  # "c2.k8s.kalski.xyz" = { ip = "10.10.10.12", mac_address = local.config["macs"]["c2_k8s"] }
+}
+
 k8s_worker_nodes = {
   "w1.k8s.kalski.xyz" = { ... }
   "w2.k8s.kalski.xyz" = {
     ip          = "10.10.10.22"
-    mac_address = local.config["w2_k8s_mac_address"]
+    mac_address = local.config["macs"]["w2_k8s"]
   }
 }
 ```
@@ -89,13 +103,16 @@ Boot the new node with Talos ISO and verify it gets the expected IP.
 
 ### 3. Add Node Configuration
 
-Add the new node to `node_config` in local-talos:
+Add the new node to `control_plane_node_config` (control plane) or `worker_node_config` (worker) in local-talos:
 
 ```hcl
-node_config = {
-  "c1.k8s.kalski.xyz" = { talos_install_disk = "/dev/mmcblk0" }
-  "w1.k8s.kalski.xyz" = { talos_install_disk = "/dev/nvme1n1" }
-  "w2.k8s.kalski.xyz" = { talos_install_disk = "/dev/sda" }  # Check with talosctl get disks
+control_plane_node_config = {
+  "c1.k8s.kalski.xyz" = { install_disk = "/dev/nvme0n1", install_image = "ghcr.io/talos-rpi5/installer:v1.11.5" }
+}
+
+worker_node_config = {
+  "w1.k8s.kalski.xyz" = { install_disk = "/dev/nvme0n1", install_image = "ghcr.io/siderolabs/installer:v1.11.5" }
+  "w2.k8s.kalski.xyz" = { install_disk = "/dev/sda", install_image = "ghcr.io/siderolabs/installer:v1.11.5" } # Check with talosctl get disks
 }
 ```
 

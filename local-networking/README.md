@@ -19,13 +19,11 @@ graph TB
         WAN1[Internet WAN 1]
         RB5009[RB5009<br/>Main Router with PoE<br/>Kuberack LAN: 10.10.10.1]
         CRS305[CRS305<br/>PoE-powered Switch]
-        RPI5[RPi 5<br/>K8s Controlplane]
-        MS01[MS-01<br/>Compute Node]
+        K8S[Talos/Kubernetes cluster<br/>Nodes on 10.10.10.0/24]
 
         WAN1 -- "ether8" --> RB5009
-        RB5009 -- "PoE" --> RPI5
         RB5009 -- "PoE" --> CRS305
-        CRS305 -- "10G SFP+" --> MS01
+        CRS305 --> K8S
     end
 
     subgraph "Stationary"
