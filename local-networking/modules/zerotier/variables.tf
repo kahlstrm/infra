@@ -12,3 +12,7 @@ variable "stationary" {
     zerotier_ip = string
   })
 }
+
+variable "poenttoe_ip" {
+  type = string
+}

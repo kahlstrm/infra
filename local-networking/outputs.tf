@@ -36,3 +36,14 @@ output "stationary_domain" {
   description = "Stationary hEX S domain name for API access"
   value       = local.stationary_hex_s.domain_name
 }
+
+output "zerotier_network_id" {
+  description = "ZeroTier Network ID"
+  value       = module.zerotier.network_id
+}
+
+output "poenttoe_zerotier_private_key" {
+  description = "ZeroTier private key for poenttoe server"
+  value       = module.zerotier.poenttoe_private_key
+  sensitive   = true
+}

@@ -22,6 +22,10 @@ locals {
   EOT
 }
 
+resource "hcloud_firewall" "deny_all" {
+  name = "deny-all"
+}
+
 resource "hcloud_server" "poenttoe" {
   name        = "poenttoe"
   location    = "hel1"
@@ -29,7 +33,7 @@ resource "hcloud_server" "poenttoe" {
   image       = "ubuntu-24.04"
 
   ssh_keys           = [data.hcloud_ssh_key.mac_personal.id]
-  firewall_ids       = [hcloud_firewall.ssh_only.id]
+  firewall_ids       = concat([hcloud_firewall.deny_all.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
   user_data          = local.nixos_infect_cloud_config
   delete_protection  = true
   rebuild_protection = true

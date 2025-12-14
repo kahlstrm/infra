@@ -27,6 +27,11 @@ locals {
       include_subdomain = true
     }
   }
+  external_dns_records = {
+    "poenttoe.kalski.xyz" = {
+      ip = "10.255.255.3"
+    }
+  }
   k8s_control_plane_nodes = {
     "c1.k8s.kalski.xyz" = {
       ip          = "10.10.10.11"
@@ -99,7 +104,7 @@ locals {
 }
 
 locals {
-  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records)
+  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records)
 }
 
 
@@ -137,6 +142,7 @@ module "zerotier" {
     zerotier_ip    = local.kuberack_rb5009.zerotier_ip
     vrrp_interface = local.kuberack_rb5009.vrrp_interface
   }
+  poenttoe_ip = local.external_dns_records["poenttoe.kalski.xyz"].ip
 }
 
 module "mktxp_kuberack" {

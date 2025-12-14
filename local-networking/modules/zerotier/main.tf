@@ -139,3 +139,16 @@ resource "routeros_ip_route" "stationary_kuberack_lan_fallback" {
   comment       = "Fallback route to Kuberack LAN via ZeroTier"
   depends_on    = [routeros_ip_address.stationary_zerotier_ip]
 }
+
+resource "zerotier_identity" "poenttoe" {}
+
+resource "zerotier_member" "poenttoe" {
+  authorized              = true
+  member_id               = zerotier_identity.poenttoe.id
+  name                    = "poenttoe"
+  network_id              = zerotier_network.network.id
+  hidden                  = false
+  allow_ethernet_bridging = true
+  no_auto_assign_ips      = true
+  ip_assignments          = [var.poenttoe_ip]
+}
