@@ -18,6 +18,10 @@ locals {
     #cloud-config
 
     runcmd:
+      - ROOT_DEV=$(findmnt -n -o SOURCE /)
+      - e2label "$ROOT_DEV" nixos
+      - BOOT_DEV=$(findmnt -n -o SOURCE /boot/efi || findmnt -n -o SOURCE /boot)
+      - '[ -n "$BOOT_DEV" ] && (fatlabel "$BOOT_DEV" boot || true)'
       - curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | PROVIDER=hetznercloud NIX_CHANNEL=nixos-unstable bash 2>&1 | tee /tmp/infect.log
   EOT
 }
