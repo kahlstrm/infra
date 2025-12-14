@@ -9,16 +9,13 @@ resource "google_secret_manager_secret" "secret" {
   version_destroy_ttl = "86400s"
 }
 
-data "google_secret_manager_secret_version" "bootstrapped" {
-  secret            = google_secret_manager_secret.secret.id
-  version           = "1"
-  fetch_secret_data = false
-}
-
 resource "google_secret_manager_secret_version" "initial" {
-  count          = can(data.google_secret_manager_secret_version.bootstrapped) ? 0 : 1
   secret         = google_secret_manager_secret.secret.id
   secret_data_wo = "{}"
+
+  lifecycle {
+    ignore_changes = all
+  }
 }
 
 data "google_secret_manager_secret_version" "secret_version_actual" {
