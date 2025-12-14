@@ -28,9 +28,11 @@ resource "hcloud_server" "poenttoe" {
   server_type = "cpx22"
   image       = "ubuntu-24.04"
 
-  ssh_keys     = [data.hcloud_ssh_key.mac_personal.id]
-  firewall_ids = [hcloud_firewall.ssh_only.id]
-  user_data    = local.nixos_infect_cloud_config
+  ssh_keys           = [data.hcloud_ssh_key.mac_personal.id]
+  firewall_ids       = [hcloud_firewall.ssh_only.id]
+  user_data          = local.nixos_infect_cloud_config
+  delete_protection  = true
+  rebuild_protection = true
   lifecycle {
     prevent_destroy = true
   }
