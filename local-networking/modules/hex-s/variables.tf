@@ -1,7 +1,6 @@
 variable "config" {
   type = object({
-    ip            = string
-    vrrp_priority = number
+    ip = string
   })
 }
 
@@ -9,22 +8,6 @@ variable "bootstrap_script" {
   type = object({
     filename = string
     content  = string
-  })
-}
-
-variable "vrrp_lan_static_leases" {
-  type = map(object({
-    ip          = string
-    mac_address = string
-  }))
-}
-
-variable "vrrp_shared_config" {
-  type = object({
-    vrrp_network     = string
-    virtual_ip       = string
-    dhcp_pool_ranges = optional(list(string))
-    dhcp_server_name = string
   })
 }
 
@@ -39,12 +22,28 @@ variable "dns_a_records" {
     include_subdomain = optional(bool)
   }))
 }
+
+variable "dhcp_config" {
+  type = object({
+    server_name     = string
+    network_address = string
+    pool_ranges     = list(string)
+  })
+}
+
+variable "static_leases" {
+  type = map(object({
+    ip          = string
+    mac_address = string
+  }))
+}
+
 variable "kuberack_network" {
   description = "The kuberack network CIDR (destination for routing)"
   type        = string
 }
 
 variable "kuberack_gateway" {
-  description = "Gateway IP to reach the kuberack network via shared VRRP interface"
+  description = "Gateway IP to reach the kuberack network via wired interconnect"
   type        = string
 }

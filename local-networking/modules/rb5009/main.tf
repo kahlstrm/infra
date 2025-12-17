@@ -12,14 +12,9 @@ resource "routeros_ip_address" "bridge_ip" {
   address   = "${var.config.ip}/24"
 }
 
-module "vrrp" {
-  source = "../vrrp"
-  # The VRRP instance will run on the main LAN bridge, found dynamically.
-  interface           = var.config.vrrp_interface
-  config              = var.vrrp_shared_config
-  priority            = var.config["vrrp_priority"]
-  static_leases       = var.vrrp_lan_static_leases
-  vrrp_lan_ip_address = "${var.config.shared_lan_ip}/24"
+resource "routeros_ip_address" "shared_lan_ip" {
+  interface = var.config.shared_lan_interface
+  address   = "${var.config.shared_lan_ip}/24"
 }
 
 module "dhcp_lan" {

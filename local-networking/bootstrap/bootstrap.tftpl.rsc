@@ -24,8 +24,8 @@
 :local localBridgePorts {${local_bridge_ports}}
 :local localIpv6Address "${local_ipv6_address}"
 
-# --- Shared LAN Configuration ---
-# This is a dedicated interface for the shared VRRP network.
+# --- Interconnect LAN Configuration ---
+# This is a dedicated interface for the stationary<->kuberack wired link.
 # Optional set sharedLanInterface empty to disable
 :local sharedLanInterface "${shared_lan_interface}"
 :local sharedLanIpv6AddressNetwork "${shared_lan_ipv6_address_network}"
@@ -93,7 +93,7 @@
 
 # --- Shared LAN Setup ---
 :if ($sharedLanInterface != "") do={
-  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: shared LAN for VRRP";
+  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: wired interconnect LAN";
   /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
 }
 

@@ -6,14 +6,20 @@ terraform {
   }
 }
 
-module "vrrp" {
-  source = "../vrrp"
-  # The VRRP instance will run on the main LAN bridge, found dynamically.
-  interface           = var.bridge_interface
-  vrrp_lan_ip_address = "${var.config.ip}/24"
-  config              = var.vrrp_shared_config
-  priority            = var.config["vrrp_priority"]
-  static_leases       = var.vrrp_lan_static_leases
+resource "routeros_ip_address" "bridge_ip" {
+  interface = var.bridge_interface
+  address   = "${var.config.ip}/24"
+}
+
+module "dhcp_lan" {
+  source           = "../dhcp"
+  dhcp_server_name = var.dhcp_config.server_name
+  interface_name   = var.bridge_interface
+  network_address  = var.dhcp_config.network_address
+  gateway_ip       = var.config.ip
+  dns_servers      = [var.config.ip]
+  pool_ranges      = var.dhcp_config.pool_ranges
+  static_leases    = var.static_leases
 }
 
 module "dns" {
@@ -26,7 +32,7 @@ resource "routeros_ip_route" "kuberack_lan_primary" {
   dst_address = var.kuberack_network
   gateway     = var.kuberack_gateway
   distance    = 1
-  comment     = "Primary route to Kuberack LAN via shared VRRP interface"
+  comment     = "Primary route to Kuberack LAN via wired interconnect"
 }
 
 resource "routeros_file" "bootstrap_script" {

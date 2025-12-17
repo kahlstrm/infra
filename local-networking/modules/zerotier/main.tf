@@ -118,23 +118,23 @@ resource "routeros_interface_list_member" "stationary_zerotier_mgmt" {
   comment   = "Allow management via ZeroTier"
 }
 
-# Static routes for RB5009
-resource "routeros_ip_route" "kuberack_vrrp_lan_fallback" {
+# Static routes for RB5009 (fallback over ZeroTier)
+resource "routeros_ip_route" "kuberack_stationary_lan_zerotier" {
   provider      = routeros.kuberack
   dst_address   = "10.1.1.0/24"
   gateway       = var.stationary.zerotier_ip
-  distance      = 10
+  distance      = 200
   check_gateway = "ping"
-  comment       = "Fallback route to VRRP LAN via ZeroTier"
+  comment       = "Fallback route to stationary LAN via ZeroTier"
   depends_on    = [routeros_ip_address.kuberack_zerotier_ip]
 }
 
-# Static routes for stationary router
-resource "routeros_ip_route" "stationary_kuberack_lan_fallback" {
+# Static routes for stationary router (fallback over ZeroTier)
+resource "routeros_ip_route" "stationary_kuberack_lan_zerotier" {
   provider      = routeros.stationary
   dst_address   = "10.10.10.0/24"
   gateway       = var.kuberack.zerotier_ip
-  distance      = 10
+  distance      = 200
   check_gateway = "ping"
   comment       = "Fallback route to Kuberack LAN via ZeroTier"
   depends_on    = [routeros_ip_address.stationary_zerotier_ip]

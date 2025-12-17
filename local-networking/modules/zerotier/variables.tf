@@ -1,8 +1,7 @@
 variable "kuberack" {
   type = object({
-    internal_ip    = string
-    zerotier_ip    = string
-    vrrp_interface = string
+    internal_ip = string
+    zerotier_ip = string
   })
 }
 

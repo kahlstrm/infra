@@ -1,13 +1,13 @@
 
 
 locals {
-  vrrp_shared_config = {
-    vrrp_network     = "10.1.1.0/24"
-    virtual_ip       = "10.1.1.1"
+  stationary_lan = {
+    network          = "10.1.1.0/24"
+    gateway_ip       = "10.1.1.1"
     dhcp_pool_ranges = ["10.1.1.100-10.1.1.254"]
-    dhcp_server_name = "vrrp-dhcp"
+    dhcp_server_name = "stationary-dhcp"
   }
-  vrrp_lan_static_leases_and_records = {
+  stationary_lan_static_leases_and_records = {
     "p.kalski.xyz" = {
       ip                = "10.1.1.10"
       mac_address       = local.config["macs"]["pannu"]
@@ -64,24 +64,20 @@ locals {
     }
   )
   stationary_hex_s = {
-    ip = "10.1.1.3"
-    # TODO: change these when stationary has RB5009 installed
-    vrrp_priority = 100
+    ip            = local.stationary_lan.gateway_ip
     zerotier_ip   = "10.255.255.2"
     domain_name   = "stationary-hex-s.networking.kalski.xyz"
     wan_interface = "ether1"
   }
   kuberack_rb5009 = {
-    shared_lan_ip   = "10.1.1.2"
-    shared_lan_ipv6 = "fd00:de:ad:1::2"
-    ip              = "10.10.10.1"
-    ipv6            = "fd00:de:ad:10::1"
-    # TODO: change these when stationary has RB5009 installed
-    vrrp_priority  = 254
-    vrrp_interface = "ether1"
-    zerotier_ip    = "10.255.255.1"
-    domain_name    = "kuberack-rb5009.networking.kalski.xyz"
-    wan_interface  = "ether8"
+    shared_lan_ip        = "10.1.1.2"
+    shared_lan_ipv6      = "fd00:de:ad:1::2"
+    shared_lan_interface = "ether1"
+    ip                   = "10.10.10.1"
+    ipv6                 = "fd00:de:ad:10::1"
+    zerotier_ip          = "10.255.255.1"
+    domain_name          = "kuberack-rb5009.networking.kalski.xyz"
+    wan_interface        = "ether8"
   }
   kuberack_network = {
     network = "10.10.10.0/24"
@@ -104,7 +100,7 @@ locals {
 }
 
 locals {
-  dns_a_record = merge(local.vrrp_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records)
+  dns_a_record = merge(local.stationary_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records)
 }
 
 
@@ -114,14 +110,18 @@ module "stationary" {
     routeros.hex_s = routeros.stationary_hex_s
   }
   hex_s_config = {
-    bootstrap_script       = module.bootstrap_script["stationary_hex_s"]
-    device_config          = local.stationary_hex_s
-    vrrp_shared_config     = local.vrrp_shared_config
-    vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-    bridge_interface       = "local-bridge"
-    dns_a_records          = local.dns_a_record
-    kuberack_network       = local.kuberack_network.network
-    kuberack_gateway       = local.kuberack_rb5009.shared_lan_ip
+    bootstrap_script = module.bootstrap_script["stationary_hex_s"]
+    device_config    = local.stationary_hex_s
+    dhcp_config = {
+      server_name     = local.stationary_lan.dhcp_server_name
+      network_address = local.stationary_lan.network
+      pool_ranges     = local.stationary_lan.dhcp_pool_ranges
+    }
+    static_leases    = local.stationary_lan_static_leases_and_records
+    bridge_interface = "local-bridge"
+    dns_a_records    = local.dns_a_record
+    kuberack_network = local.kuberack_network.network
+    kuberack_gateway = local.kuberack_rb5009.shared_lan_ip
   }
 }
 
@@ -138,9 +138,8 @@ module "zerotier" {
     zerotier_ip = local.stationary_hex_s.zerotier_ip
   }
   kuberack = {
-    internal_ip    = local.kuberack_rb5009.ip
-    zerotier_ip    = local.kuberack_rb5009.zerotier_ip
-    vrrp_interface = local.kuberack_rb5009.vrrp_interface
+    internal_ip = local.kuberack_rb5009.ip
+    zerotier_ip = local.kuberack_rb5009.zerotier_ip
   }
   poenttoe_ip = local.external_dns_records["poenttoe.kalski.xyz"].ip
 }
@@ -185,15 +184,13 @@ module "kuberack" {
     routeros.rb5009 = routeros.kuberack_rb5009
   }
   rb5009_config = {
-    bootstrap_script       = module.bootstrap_script["kuberack_rb5009"]
-    device_config          = local.kuberack_rb5009
-    vrrp_shared_config     = local.vrrp_shared_config
-    vrrp_lan_static_leases = local.vrrp_lan_static_leases_and_records
-    lan_static_leases      = local.kuberack_lan_static_leases_and_records
-    lan_dhcp_config        = local.kuberack_dhcp_config
-    bridge_interface       = "kuberack-bridge"
-    dns_a_records          = local.dns_a_record
-    wan_interface          = local.bootstrap_configs.kuberack_rb5009.wan_interface
+    bootstrap_script  = module.bootstrap_script["kuberack_rb5009"]
+    device_config     = local.kuberack_rb5009
+    lan_static_leases = local.kuberack_lan_static_leases_and_records
+    lan_dhcp_config   = local.kuberack_dhcp_config
+    bridge_interface  = "kuberack-bridge"
+    dns_a_records     = local.dns_a_record
+    wan_interface     = local.bootstrap_configs.kuberack_rb5009.wan_interface
   }
 }
 

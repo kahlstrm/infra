@@ -4,11 +4,10 @@ This manages the MikroTik routers that provide redundant connectivity between th
 
 ## Network Setup
 
-The network is composed of two main logical networks, connected by a shared high-availability backbone.
+The network is composed of two main logical networks, connected by a 2.5Gbps interconnect when docked.
 
-- **Kuberack LAN**: `10.10.10.0/24` (for devices connected only to the RB5009 and CRS305 switch)
-- **Shared LAN (VRRP)**: `10.1.1.0/24` (a high-availability network for critical devices like `pannu` and the U7 Pro Wall AP)
-- **VRRP Virtual Gateway**: `10.1.1.1`
+- **Kuberack LAN**: `10.10.10.0/24` (portable stack on the RB5009 + CRS305 switch)
+- **Stationary LAN**: `10.1.1.0/24` (stationary stack; single gateway/DHCP on the stationary router at `10.1.1.1`)
 - **ZeroTier VPN**: `10.255.255.0/24` (for site-to-site connectivity when separated)
 
 ### Network Diagram
@@ -17,9 +16,9 @@ The network is composed of two main logical networks, connected by a shared high
 graph TB
     subgraph "Kuberack (Portable)"
         WAN1[Internet WAN 1]
-        RB5009[RB5009<br/>Main Router with PoE<br/>Kuberack LAN: 10.10.10.1]
+        RB5009[RB5009<br/>Gateway 10.10.10.1]
         CRS305[CRS305<br/>PoE-powered Switch]
-        K8S[Talos/Kubernetes cluster<br/>Nodes on 10.10.10.0/24]
+        K8S[Talos/Kubernetes cluster<br/>10.10.10.0/24]
 
         WAN1 -- "ether8" --> RB5009
         RB5009 -- "PoE" --> CRS305
@@ -28,9 +27,8 @@ graph TB
 
     subgraph "Stationary"
         WAN2[Internet WAN 2]
-        RB5009S[RB5009UGS<br/>Stationary Router]
+        RB5009S[RB5009UGS<br/>Stationary Gateway 10.1.1.1]
         CRS310[CRS310<br/>Managed Switch]
-        VRRP[VRRP Virtual Gateway<br/>10.1.1.1]
         POESWITCH[8-port 2.5G PoE Switch]
         U7[U7 Pro Wall AP]
         RPI4[RPi 4<br/>Home Assistant + Unifi]
@@ -39,47 +37,51 @@ graph TB
         JETKVM[JetKVM<br/>10.1.1.11]
 
         WAN2 -- "ether1 (2.5G)" --> RB5009S
-        RB5009S -- "SFP+<br/>VRRP Priority 254<br/>10.1.1.3" --> CRS310
+        RB5009S -- "SFP+" --> CRS310
         RB5009S --> JETKVM
         CRS310 -- "SFP+" --> POESWITCH
-        VRRP --- POESWITCH
         POESWITCH -- "PoE" --> U7
         POESWITCH -- "PoE" --> RPI4
         CRS310 --> PANNU
         CRS310 --> ZIMA
     end
 
-    RB5009 -. "ether1 (2.5G)<br/>VRRP Priority 100<br/>10.1.1.2" .-> POESWITCH
-    RB5009 <-.->|VPN when separated| RB5009S
+    RB5009 -. "ether1 (2.5G)\n10.1.1.2" .-> CRS310
+    RB5009 <-.->|ZeroTier when separated| RB5009S
 ```
 
 ## How It Works
 
 _Note: The following describes the target architecture for the network. The implementation is ongoing and details are subject to change._
 
-This network is designed for both high performance and automatic failover using a combination of a shared network segment, VRRP, and state-aware DHCP services.
+This network is designed for high performance when docked and graceful reachability when separated, without VRRP complexity.
 
-### Connected Mode (Normal High-Performance Operation)
+### Docked (Normal High-Performance Operation)
 
-- **Unified Backbone**: The stationary network infrastructure creates a shared Layer 2 network (`10.1.1.0/24`). The RB5009 (via `ether1`) and the RB5009UGS (via a bridge of its LAN ports) connect to this network. Devices like `pannu` and the U7 Pro Wall AP connect here to get 2.5G connectivity with the Kuberack network.
-- **Primary Router**: The RB5009UGS is the primary router (VRRP Master, priority 254) and handles all internet traffic for the shared network.
-- **Central DHCP**: The RB5009UGS runs the primary DHCP server for the shared network. It provides leases to all devices, including static reservations for devices like `pannu`.
-- **Backup Router (Standby)**: The RB5009 is in standby (VRRP Backup, priority 100). Its dedicated DHCP server for the shared network is **disabled** by a VRRP state-change script to prevent conflicts.
+- **Stationary Gateway**: The RB5009UGS is the sole gateway/DHCP/DNS for `10.1.1.0/24` (`10.1.1.1`).
+- **Interconnect**: The kuberack RB5009 uses `ether1` with IP `10.1.1.2/24` to the stationary switch stack for 2.5Gbps routing between LANs.
+- **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.1.1.2`; kuberack reaches `10.1.1.0/24` directly over the interconnect. Internet for `10.1.1.x` flows out the stationary WAN.
 
-### Separated Mode (Failover Operation)
+### Separated Mode (Fallback Operation)
 
-- **Failure Detection**: When the RB5009UGS loses power or fails, the RB5009 (if connected) detects the loss of VRRP heartbeats and automatically transitions to become the VRRP Master.
-- **Failover DHCP Activation**: The moment the RB5009 becomes VRRP master, a VRRP `on-master` script instantly **enables** its DHCP server.
-- **Resilient Connectivity**: This server provides **static DHCP leases** to critical devices (like `pannu` and `JetKVM`), ensuring they can get online or renew their leases even when the RB5009UGS is unavailable. The gateway remains `10.1.1.1`, which is now controlled by the RB5009.
-- **Backup Path**: All traffic from the stationary network now flows through the RB5009 and out its own WAN connection.
+- **ZeroTier Paths**: High-distance routes over ZeroTier connect `10.10.10.0/24` and `10.1.1.0/24` when the wired interconnect is absent.
+- **Independent Gateways**: Each site uses its own WAN; ZeroTier only carries cross-site traffic when separated.
 
-## VRRP Setup
+## Provisioning Responsibilities
 
-VRRP handles automatic failover between routers on the shared `10.1.1.0/24` network:
+**Bootstrap script (one-time after reset)**
+- Set system identity, build LAN bridge (ports, MAC), enable IPv6 SLAAC/RA on the bridge.
+- Optionally add the wired interconnect interface with IPv6 (no IPv4).
+- Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client + IPv6 PD, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
+- No IPv4 addresses, no DHCP servers, no static routes—left to Terraform.
 
-- **Virtual IP**: `10.1.1.1` (gateway for all devices on the shared network)
-- **RB5009UGS**: Priority 254 (master when stationary setup is primary)
-- **RB5009**: Priority 100 (backup, becomes master when RB5009UGS unavailable)
+**Terraform apply (ongoing)**
+- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.1.1.2/24` on kuberack interconnect; `10.10.10.1/24` on kuberack bridge.
+- DHCP: `stationary-dhcp` for 10.1.1.0/24 with static leases; `kuberack-dhcp` for 10.10.10.0/24 with static leases.
+- DNS: resolver settings plus static records/adlists on both routers.
+- Routing: static route on stationary to `10.10.10.0/24` via `10.1.1.2`; ZeroTier fallback routes (distance 200) both ways.
+- ZeroTier instances/interfaces/addresses and MGMT_ALLOWED membership.
+- Users/certs/QoS: mktxp & external_dns users, ACME certs, cake QoS on kuberack WAN, and uploading the bootstrap script.
 
 ## VPN
 
@@ -131,13 +133,11 @@ To bootstrap a new MikroTik device or to update an existing one with the latest 
 - [ ] Implement stationary module (RB5009UGS)
   - [x] Minimal bootstrap script
   - [x] Basic network configuration (IP addressing, DHCP)
-  - [x] Configure failover DHCP server with static leases (pannu, JetKVM)
-  - [x] VRRP setup for failover
+  - [x] Configure DHCP server with static leases (pannu, JetKVM)
   - [ ] Firewall rules
 - [ ] Implement kuberack module (RB5009 + CRS305)
   - [x] RB5009 minimal bootstrap script
   - [x] RB5009 basic network configuration
-  - [x] RB5009 VRRP setup (backup role)
   - [ ] CRS305 minimal bootstrap script (basic Layer 2 switch)
   - [ ] RB5009 firewall rules
   - [ ] CRS305 basic switch configuration
