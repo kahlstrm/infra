@@ -9,15 +9,6 @@ resource "google_secret_manager_secret" "secret" {
   version_destroy_ttl = "86400s"
 }
 
-resource "google_secret_manager_secret_version" "initial" {
-  secret         = google_secret_manager_secret.secret.id
-  secret_data_wo = "{}"
-
-  lifecycle {
-    ignore_changes = all
-  }
-}
-
 data "google_secret_manager_secret_version" "secret_version_actual" {
   secret = google_secret_manager_secret.secret.id
 }
