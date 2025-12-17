@@ -30,16 +30,6 @@ resource "hcloud_firewall" "deny_all" {
   name = "deny-all"
 }
 
-resource "hcloud_firewall" "zerotier" {
-  name = "zerotier"
-  rule {
-    direction  = "in"
-    protocol   = "udp"
-    port       = "9993"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-}
-
 resource "hcloud_server" "poenttoe" {
   name        = "poenttoe"
   location    = "hel1"
@@ -47,7 +37,7 @@ resource "hcloud_server" "poenttoe" {
   image       = "ubuntu-24.04"
 
   ssh_keys           = [data.hcloud_ssh_key.mac_personal.id]
-  firewall_ids       = concat([hcloud_firewall.deny_all.id, hcloud_firewall.zerotier.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
+  firewall_ids       = concat([hcloud_firewall.deny_all.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
   user_data          = local.nixos_infect_cloud_config
   delete_protection  = true
   rebuild_protection = true
