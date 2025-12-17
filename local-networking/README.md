@@ -46,7 +46,8 @@ graph TB
         CRS310 --> ZIMA
     end
 
-    RB5009 -. "ether1 (2.5G)\n10.1.1.2" .-> CRS310
+    RB5009 -. "ether1\n10.254.254.1/30" .-> |"transit link"| RB5009S
+    RB5009S -. "ether2\n10.254.254.2/30" .-  RB5009
     RB5009 <-.->|ZeroTier when separated| RB5009S
 ```
 
@@ -59,8 +60,8 @@ This network is designed for high performance when docked and graceful reachabil
 ### Docked (Normal High-Performance Operation)
 
 - **Stationary Gateway**: The RB5009UGS is the sole gateway/DHCP/DNS for `10.1.1.0/24` (`10.1.1.1`).
-- **Interconnect**: The kuberack RB5009 uses `ether1` with IP `10.1.1.2/24` to the stationary switch stack for 2.5Gbps routing between LANs.
-- **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.1.1.2`; kuberack reaches `10.1.1.0/24` directly over the interconnect. Internet for `10.1.1.x` flows out the stationary WAN.
+- **Transit Link**: Dedicated point-to-point link between kuberack (ether1) and stationary (ether2) using `10.254.254.0/30` subnet. This ensures symmetric routing - all inter-LAN traffic flows through both routers.
+- **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.254.254.1`; kuberack has a static route to `10.1.1.0/24` via `10.254.254.2`. Internet for each LAN flows out its respective WAN.
 
 ### Separated Mode (Fallback Operation)
 
@@ -76,10 +77,10 @@ This network is designed for high performance when docked and graceful reachabil
 - No IPv4 addresses, no DHCP servers, no static routes—left to Terraform.
 
 **Terraform apply (ongoing)**
-- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.1.1.2/24` on kuberack interconnect; `10.10.10.1/24` on kuberack bridge.
+- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether2); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
 - DHCP: `stationary-dhcp` for 10.1.1.0/24 with static leases; `kuberack-dhcp` for 10.10.10.0/24 with static leases.
 - DNS: resolver settings plus static records/adlists on both routers.
-- Routing: static route on stationary to `10.10.10.0/24` via `10.1.1.2`; ZeroTier fallback routes (distance 200) both ways.
+- Routing: static route on stationary to `10.10.10.0/24` via `10.254.254.1`; static route on kuberack to `10.1.1.0/24` via `10.254.254.2`; ZeroTier fallback routes (distance 200) both ways.
 - ZeroTier instances/interfaces/addresses and MGMT_ALLOWED membership.
 - Users/certs/QoS: mktxp & external_dns users, ACME certs, cake QoS on kuberack WAN, and uploading the bootstrap script.
 
@@ -153,6 +154,13 @@ To bootstrap a new MikroTik device or to update an existing one with the latest 
   - [x] Performance testing (~50Mbps through ZeroTier tunnel)
 - [ ] Refactoring
   - [ ] move DHCP servers to terraform, with initial config being done with static IP configuration
+- [ ] CRS310 VLAN-based transit link (future enhancement)
+  - [ ] Add CRS310 to Terraform management
+  - [ ] Configure VLAN 100 for transit traffic between kuberack and stationary
+  - [ ] Set kuberack-facing port as access VLAN 100
+  - [ ] Set stationary-facing SFP+ as trunk (VLAN 1 + VLAN 100)
+  - [ ] Move transit IP to VLAN interface on stationary (frees ether2 for bridge)
+  - [ ] Benefits: No dedicated transit port needed, all router ports available for LAN
 
 ## Important Notes
 

@@ -17,14 +17,14 @@
 
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
-:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"}
+:local localBridgePorts {"ether3"; "ether4"; "ether5"}
 :local localIpv6Address "fd00:de:ad:1::3/64"
 
-# --- Interconnect LAN Configuration ---
+# --- Transit Link Configuration ---
 # This is a dedicated interface for the stationary<->kuberack wired link.
-# Optional set sharedLanInterface empty to disable
-:local sharedLanInterface ""
-:local sharedLanIpv6AddressNetwork ""
+# Optional set transitInterface empty to disable
+:local transitInterface "ether2"
+:local transitIpv6AddressNetwork "fd00:de:ad:ff::2/64"
 
 # --- WAN Configuration ---
 :local wanInterface "ether1"
@@ -86,15 +86,15 @@
 /ip dns static add name="kuberack-rb5009.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
 /ip dns static add name="stationary-hex-s.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
 
-# --- Shared LAN Setup ---
-:if ($sharedLanInterface != "") do={
-  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: wired interconnect LAN";
-  /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
+# --- Transit Link Setup ---
+:if ($transitInterface != "") do={
+  /ipv6 address add address="$transitIpv6AddressNetwork" interface=$transitInterface comment="bootstrap: transit link";
+  /interface list member add list=LAN interface=$transitInterface comment="bootstrap";
 }
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
-/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:1::2 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
+/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
@@ -102,8 +102,8 @@
 :if ($createLocalBridge) do={
   /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
-:if ($sharedLanInterface != "") do={
-  /interface list member add list=MGMT_ALLOWED interface=$sharedLanInterface comment="bootstrap"
+:if ($transitInterface != "") do={
+  /interface list member add list=MGMT_ALLOWED interface=$transitInterface comment="bootstrap"
 }
 /ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
 /tool mac-server set allowed-interface-list=MGMT_ALLOWED

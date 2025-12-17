@@ -12,9 +12,18 @@ resource "routeros_ip_address" "bridge_ip" {
   address   = "${var.config.ip}/24"
 }
 
-resource "routeros_ip_address" "shared_lan_ip" {
-  interface = var.config.shared_lan_interface
-  address   = "${var.config.shared_lan_ip}/24"
+resource "routeros_ip_address" "transit_address" {
+  interface = var.config.transit_interface
+  address   = var.config.transit_address
+}
+
+resource "routeros_ip_route" "stationary_lan_primary" {
+  dst_address   = var.stationary_network
+  disabled      = false
+  gateway       = var.stationary_gateway
+  check_gateway = "ping"
+  distance      = 1
+  comment       = "Primary route to stationary LAN via transit link"
 }
 
 module "dhcp_lan" {

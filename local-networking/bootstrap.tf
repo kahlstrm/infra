@@ -3,40 +3,39 @@ locals {
 
   bootstrap_configs = {
     "stationary_hex_s" = {
-      system_identity                 = "stationary-hex-s"
-      local_bridge_name               = "local-bridge"
-      local_bridge_ports              = ["ether2", "ether3", "ether4", "ether5"]
-      local_ipv4_address              = format("%s/24", local.stationary_hex_s.ip)
-      local_ipv6_address              = format("%s/64", local.all_router_dns_records[local.stationary_hex_s.domain_name].ipv6)
-      all_router_dns_records          = local.all_router_dns_records
-      shared_lan_interface            = ""
-      shared_lan_ip_address_network   = ""
-      shared_lan_ipv6_address_network = ""
-      wan_interface                   = local.stationary_hex_s.wan_interface
-      cake_enabled                    = false
-      install_zerotier                = true
+      system_identity                = "stationary-hex-s"
+      local_bridge_name              = "local-bridge"
+      local_bridge_ports             = ["ether3", "ether4", "ether5"]
+      local_ipv4_address             = format("%s/24", local.stationary_hex_s.ip)
+      local_ipv6_address             = format("%s/64", local.all_router_dns_records[local.stationary_hex_s.domain_name].ipv6)
+      all_router_dns_records         = local.all_router_dns_records
+      transit_interface              = local.stationary_hex_s.transit_interface
+      transit_ipv6_address_network   = "${local.stationary_hex_s.transit_ipv6}/64"
+      wan_interface                  = local.stationary_hex_s.wan_interface
+      cake_enabled                   = false
+      install_zerotier               = true
       management_routes = [
         {
           comment          = "route to RB5009 kuberack for management"
           ipv6_destination = "fd00:de:ad:10::/64"
-          ipv6_gateway     = local.kuberack_rb5009.shared_lan_ipv6
+          ipv6_gateway     = local.kuberack_rb5009.transit_ipv6
           distance         = 255
         }
       ]
     },
     "kuberack_rb5009" = {
-      system_identity                 = "kuberack-rb5009"
-      local_bridge_name               = "kuberack-bridge"
-      local_bridge_ports              = ["ether2", "ether3", "ether4", "ether5", "ether6", "ether7", "sfp-sfpplus1"]
-      local_ipv4_address              = format("%s/24", local.kuberack_rb5009.ip)
-      local_ipv6_address              = format("%s/64", local.all_router_dns_records[local.kuberack_rb5009.domain_name].ipv6)
-      all_router_dns_records          = local.all_router_dns_records
-      shared_lan_interface            = "ether1"
-      shared_lan_ipv6_address_network = "${local.kuberack_rb5009.shared_lan_ipv6}/64"
-      wan_interface                   = local.kuberack_rb5009.wan_interface
-      cake_enabled                    = true
-      install_zerotier                = true
-      management_routes               = []
+      system_identity              = "kuberack-rb5009"
+      local_bridge_name            = "kuberack-bridge"
+      local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "ether7", "sfp-sfpplus1"]
+      local_ipv4_address           = format("%s/24", local.kuberack_rb5009.ip)
+      local_ipv6_address           = format("%s/64", local.all_router_dns_records[local.kuberack_rb5009.domain_name].ipv6)
+      all_router_dns_records       = local.all_router_dns_records
+      transit_interface            = local.kuberack_rb5009.transit_interface
+      transit_ipv6_address_network = "${local.kuberack_rb5009.transit_ipv6}/64"
+      wan_interface                = local.kuberack_rb5009.wan_interface
+      cake_enabled                 = true
+      install_zerotier             = true
+      management_routes            = []
     }
   }
 }

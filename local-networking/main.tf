@@ -63,16 +63,26 @@ locals {
       }
     }
   )
+  transit_network = {
+    kuberack_address     = "10.254.254.1/30"
+    stationary_address   = "10.254.254.2/30"
+    kuberack_ipv6        = "fd00:de:ad:ff::1"
+    stationary_ipv6      = "fd00:de:ad:ff::2"
+    stationary_interface = "ether2"
+  }
   stationary_hex_s = {
-    ip            = local.stationary_lan.gateway_ip
-    zerotier_ip   = "10.255.255.2"
-    domain_name   = "stationary-hex-s.networking.kalski.xyz"
-    wan_interface = "ether1"
+    ip                = local.stationary_lan.gateway_ip
+    zerotier_ip       = "10.255.255.2"
+    domain_name       = "stationary-hex-s.networking.kalski.xyz"
+    wan_interface     = "ether1"
+    transit_address   = local.transit_network.stationary_address
+    transit_ipv6      = local.transit_network.stationary_ipv6
+    transit_interface = local.transit_network.stationary_interface
   }
   kuberack_rb5009 = {
-    shared_lan_ip        = "10.1.1.2"
-    shared_lan_ipv6      = "fd00:de:ad:1::2"
-    shared_lan_interface = "ether1"
+    transit_address   = local.transit_network.kuberack_address
+    transit_ipv6      = local.transit_network.kuberack_ipv6
+    transit_interface = "ether1"
     ip                   = "10.10.10.1"
     ipv6                 = "fd00:de:ad:10::1"
     zerotier_ip          = "10.255.255.1"
@@ -121,7 +131,7 @@ module "stationary" {
     bridge_interface = "local-bridge"
     dns_a_records    = local.dns_a_record
     kuberack_network = local.kuberack_network.network
-    kuberack_gateway = local.kuberack_rb5009.shared_lan_ip
+    kuberack_gateway = split("/", local.kuberack_rb5009.transit_address)[0]
   }
 }
 
@@ -184,13 +194,15 @@ module "kuberack" {
     routeros.rb5009 = routeros.kuberack_rb5009
   }
   rb5009_config = {
-    bootstrap_script  = module.bootstrap_script["kuberack_rb5009"]
-    device_config     = local.kuberack_rb5009
-    lan_static_leases = local.kuberack_lan_static_leases_and_records
-    lan_dhcp_config   = local.kuberack_dhcp_config
-    bridge_interface  = "kuberack-bridge"
-    dns_a_records     = local.dns_a_record
-    wan_interface     = local.bootstrap_configs.kuberack_rb5009.wan_interface
+    bootstrap_script   = module.bootstrap_script["kuberack_rb5009"]
+    device_config      = local.kuberack_rb5009
+    lan_static_leases  = local.kuberack_lan_static_leases_and_records
+    lan_dhcp_config    = local.kuberack_dhcp_config
+    bridge_interface   = "kuberack-bridge"
+    dns_a_records      = local.dns_a_record
+    wan_interface      = local.bootstrap_configs.kuberack_rb5009.wan_interface
+    stationary_network = local.stationary_lan.network
+    stationary_gateway = split("/", local.stationary_hex_s.transit_address)[0]
   }
 }
 

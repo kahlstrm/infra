@@ -1,6 +1,8 @@
 variable "config" {
   type = object({
-    ip = string
+    ip                = string
+    transit_address   = string
+    transit_interface = string
   })
 }
 

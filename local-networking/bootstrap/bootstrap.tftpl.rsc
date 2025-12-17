@@ -24,11 +24,11 @@
 :local localBridgePorts {${local_bridge_ports}}
 :local localIpv6Address "${local_ipv6_address}"
 
-# --- Interconnect LAN Configuration ---
+# --- Transit Link Configuration ---
 # This is a dedicated interface for the stationary<->kuberack wired link.
-# Optional set sharedLanInterface empty to disable
-:local sharedLanInterface "${shared_lan_interface}"
-:local sharedLanIpv6AddressNetwork "${shared_lan_ipv6_address_network}"
+# Optional set transitInterface empty to disable
+:local transitInterface "${transit_interface}"
+:local transitIpv6AddressNetwork "${transit_ipv6_address_network}"
 
 # --- WAN Configuration ---
 :local wanInterface "${wan_interface}"
@@ -91,10 +91,10 @@
 /ip dns static add name="${name}" address=${ips.ipv6} type=AAAA comment="bootstrap"
 %{ endfor ~}
 
-# --- Shared LAN Setup ---
-:if ($sharedLanInterface != "") do={
-  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: wired interconnect LAN";
-  /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
+# --- Transit Link Setup ---
+:if ($transitInterface != "") do={
+  /ipv6 address add address="$transitIpv6AddressNetwork" interface=$transitInterface comment="bootstrap: transit link";
+  /interface list member add list=LAN interface=$transitInterface comment="bootstrap";
 }
 
 %{ if length(management_routes) > 0 ~}
@@ -111,8 +111,8 @@
 :if ($createLocalBridge) do={
   /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
-:if ($sharedLanInterface != "") do={
-  /interface list member add list=MGMT_ALLOWED interface=$sharedLanInterface comment="bootstrap"
+:if ($transitInterface != "") do={
+  /interface list member add list=MGMT_ALLOWED interface=$transitInterface comment="bootstrap"
 }
 /ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
 /tool mac-server set allowed-interface-list=MGMT_ALLOWED

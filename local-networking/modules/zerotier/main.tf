@@ -121,6 +121,7 @@ resource "routeros_interface_list_member" "stationary_zerotier_mgmt" {
 # Static routes for RB5009 (fallback over ZeroTier)
 resource "routeros_ip_route" "kuberack_stationary_lan_zerotier" {
   provider      = routeros.kuberack
+  disabled      = false
   dst_address   = "10.1.1.0/24"
   gateway       = var.stationary.zerotier_ip
   distance      = 200
@@ -132,6 +133,7 @@ resource "routeros_ip_route" "kuberack_stationary_lan_zerotier" {
 # Static routes for stationary router (fallback over ZeroTier)
 resource "routeros_ip_route" "stationary_kuberack_lan_zerotier" {
   provider      = routeros.stationary
+  disabled      = false
   dst_address   = "10.10.10.0/24"
   gateway       = var.kuberack.zerotier_ip
   distance      = 200

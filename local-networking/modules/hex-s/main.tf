@@ -11,6 +11,11 @@ resource "routeros_ip_address" "bridge_ip" {
   address   = "${var.config.ip}/24"
 }
 
+resource "routeros_ip_address" "transit_address" {
+  interface = var.config.transit_interface
+  address   = var.config.transit_address
+}
+
 module "dhcp_lan" {
   source           = "../dhcp"
   dhcp_server_name = var.dhcp_config.server_name
@@ -29,10 +34,12 @@ module "dns" {
 }
 
 resource "routeros_ip_route" "kuberack_lan_primary" {
-  dst_address = var.kuberack_network
-  gateway     = var.kuberack_gateway
-  distance    = 1
-  comment     = "Primary route to Kuberack LAN via wired interconnect"
+  dst_address   = var.kuberack_network
+  disabled      = false
+  gateway       = var.kuberack_gateway
+  check_gateway = "ping"
+  distance      = 1
+  comment       = "Primary route to Kuberack LAN via wired interconnect"
 }
 
 resource "routeros_file" "bootstrap_script" {

@@ -1,8 +1,8 @@
 variable "config" {
   type = object({
-    ip                   = string
-    shared_lan_ip        = string
-    shared_lan_interface = string
+    ip                = string
+    transit_address   = string
+    transit_interface = string
   })
 }
 
@@ -43,4 +43,14 @@ variable "dns_a_records" {
 
 variable "wan_interface" {
   type = string
+}
+
+variable "stationary_network" {
+  description = "The stationary network CIDR (destination for routing)"
+  type        = string
+}
+
+variable "stationary_gateway" {
+  description = "Gateway IP to reach the stationary network via transit link"
+  type        = string
 }

@@ -20,11 +20,11 @@
 :local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "ether6"; "ether7"; "sfp-sfpplus1"}
 :local localIpv6Address "fd00:de:ad:10::1/64"
 
-# --- Interconnect LAN Configuration ---
+# --- Transit Link Configuration ---
 # This is a dedicated interface for the stationary<->kuberack wired link.
-# Optional set sharedLanInterface empty to disable
-:local sharedLanInterface "ether1"
-:local sharedLanIpv6AddressNetwork "fd00:de:ad:1::2/64"
+# Optional set transitInterface empty to disable
+:local transitInterface "ether1"
+:local transitIpv6AddressNetwork "fd00:de:ad:ff::1/64"
 
 # --- WAN Configuration ---
 :local wanInterface "ether8"
@@ -86,10 +86,10 @@
 /ip dns static add name="kuberack-rb5009.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
 /ip dns static add name="stationary-hex-s.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
 
-# --- Shared LAN Setup ---
-:if ($sharedLanInterface != "") do={
-  /ipv6 address add address="$sharedLanIpv6AddressNetwork" interface=$sharedLanInterface comment="bootstrap: wired interconnect LAN";
-  /interface list member add list=LAN interface=$sharedLanInterface comment="bootstrap";
+# --- Transit Link Setup ---
+:if ($transitInterface != "") do={
+  /ipv6 address add address="$transitIpv6AddressNetwork" interface=$transitInterface comment="bootstrap: transit link";
+  /interface list member add list=LAN interface=$transitInterface comment="bootstrap";
 }
 
 #
@@ -99,8 +99,8 @@
 :if ($createLocalBridge) do={
   /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
-:if ($sharedLanInterface != "") do={
-  /interface list member add list=MGMT_ALLOWED interface=$sharedLanInterface comment="bootstrap"
+:if ($transitInterface != "") do={
+  /interface list member add list=MGMT_ALLOWED interface=$transitInterface comment="bootstrap"
 }
 /ip neighbor discovery-settings set discover-interface-list=MGMT_ALLOWED
 /tool mac-server set allowed-interface-list=MGMT_ALLOWED
