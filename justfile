@@ -26,12 +26,23 @@ edit:
     trap 'rm -f $TEMP_FILE' EXIT
 
     echo "Downloading current secret..."
-    gcloud secrets versions access latest --secret="$SECRET_NAME" | jq . > $TEMP_FILE
+    if gcloud secrets versions access latest --secret="$SECRET_NAME" > "${TEMP_FILE}.raw" 2>/dev/null; then
+        jq . "${TEMP_FILE}.raw" > "$TEMP_FILE"
+        rm -f "${TEMP_FILE}.raw"
+    else
+        echo "Warning: Could not fetch latest version (might be new). Initializing with empty JSON."
+        echo "{}" > "$TEMP_FILE"
+    fi
     ${EDITOR:-vim} $TEMP_FILE
 
     echo "Validating and formatting JSON..."
-    if ! jq empty < $TEMP_FILE; then
-        echo "Error: Invalid JSON format!"
+    if [ ! -s "$TEMP_FILE" ]; then
+        echo "File is empty. Skipping upload."
+        exit 0
+    fi
+
+    if ! jq empty < "$TEMP_FILE"; then
+        echo "Error: Invalid JSON format! Skipping upload."
         exit 1
     fi
 
@@ -69,39 +80,44 @@ clean dry_run="false":
     #!/usr/bin/env bash
     set -euo pipefail
     SECRET_NAME=$(basename $(pwd))
-    echo "{{dry_run}}"
 
+    # Normalize dry_run to true if it's not false
+    DRY_RUN=false
     if [ "{{dry_run}}" != "false" ]; then
-        echo "DRY RUN: What would be deleted from $SECRET_NAME (keeping latest 2)..."
-        ACTION="Would destroy"
-        VERB="would be"
-    else
-        echo "Cleaning old versions of $SECRET_NAME (keeping latest 2)..."
-        ACTION="Destroying"
-        VERB="cleanup"
+        DRY_RUN=true
     fi
 
-    OLD_VERSIONS=$(gcloud secrets versions list $SECRET_NAME --filter="state:ENABLED" --format="value(name)" --sort-by="~createTime" | tail -n +3)
+    if [ "$DRY_RUN" = "true" ]; then
+        echo "DRY RUN: What would be deleted from $SECRET_NAME (keeping latest 2)..."
+    else
+        echo "Cleaning old versions of $SECRET_NAME (keeping latest 2)..."
+    fi
+
+    # Get version IDs (basename) only
+    OLD_VERSIONS=$(gcloud secrets versions list $SECRET_NAME --filter="state:ENABLED" --format="value(name.basename())" --sort-by="~createTime" | tail -n +3)
 
     if [ -n "$OLD_VERSIONS" ]; then
-        echo "$ACTION versions: $OLD_VERSIONS"
-        if [ "{{dry_run}}" = "true" ]; then
+        if [ "$DRY_RUN" = "true" ]; then
+            echo "Would destroy versions:"
             for version in $OLD_VERSIONS; do
                 echo "  - $version"
             done
-            KEEP_VERSIONS=$(gcloud secrets versions list $SECRET_NAME --filter="state:ENABLED" --format="value(name)" --sort-by="~createTime" | head -n 2)
-            echo "Would keep these versions:"
+            
+            KEEP_VERSIONS=$(gcloud secrets versions list $SECRET_NAME --filter="state:ENABLED" --format="value(name.basename())" --sort-by="~createTime" | head -n 2)
+            echo "Would keep versions:"
             for version in $KEEP_VERSIONS; do
-                echo "  - $version (keep)"
+                echo "  - $version"
             done
         else
+            echo "Destroying versions..."
             for version in $OLD_VERSIONS; do
-                gcloud secrets versions destroy $version --secret="$SECRET_NAME" --quiet
+                echo "  - Destroying version $version..."
+                gcloud secrets versions destroy "$version" --secret="$SECRET_NAME" --quiet
             done
             echo "Cleanup complete"
         fi
     else
-        echo "No old versions to clean up"
+        echo "No old versions to clean up (<= 2 versions exist)."
     fi
 
 # RouterOS REST API debug
