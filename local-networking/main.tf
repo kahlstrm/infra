@@ -227,3 +227,19 @@ module "kuberack_rb5009_cert" {
   cf_dns_api_token = local.config["cf_dns_api_token"]
   domain           = local.kuberack_rb5009.domain_name
 }
+
+resource "routeros_system_user_sshkeys" "admin_keys_stationary" {
+  provider = routeros.stationary_hex_s
+  for_each = nonsensitive(local.config["ssh_public_keys"])
+  user     = local.config["hex_s"]["username"]
+  key      = each.value
+  comment  = each.key
+}
+
+resource "routeros_system_user_sshkeys" "admin_keys_kuberack" {
+  provider = routeros.kuberack_rb5009
+  for_each = nonsensitive(local.config["ssh_public_keys"])
+  user     = local.config["rb5009"]["username"]
+  key      = each.value
+  comment  = each.key
+}
