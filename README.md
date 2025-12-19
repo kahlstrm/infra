@@ -47,31 +47,34 @@ local-kubernetes/
 ### Cluster Primitives vs Platform Services vs Applications
 
 **Cluster Primitives** (`local-talos/`, Terraform): Must exist before anything else works. Deployed via Terraform to guarantee ordering.
+
 - ArgoCD (GitOps bootstrap)
 - OpenEBS (storage - PVCs don't work without it)
 - MetalLB (networking - LoadBalancer services don't work without it)
 
 **Platform Services** (`apps-talos/`, ArgoCD): Talos-specific services that would be replaced by managed services on cloud platforms.
+
 - cert-manager (TLS certificates)
 - Traefik (ingress controller)
 - MinIO (object storage)
 - Harbor (container registry)
 
 **Applications** (`apps/`, ArgoCD): Portable workloads that work on any platform with the right services available.
+
 - External-DNS (MikroTik DNS - same provider everywhere)
 - Observability stack
 
 ### Platform Services by Environment
 
-| Service | Local (Talos) | AWS | Hetzner |
-|---------|---------------|-----|---------|
-| Block Storage | OpenEBS | EBS CSI | Hetzner CSI |
-| Load Balancer | MetalLB | (built-in) | Hetzner LB |
-| TLS Certs | cert-manager | cert-manager | cert-manager |
-| Ingress | Traefik | ALB Controller | Traefik |
-| Object Storage | MinIO | S3 | Hetzner Object Storage |
-| Container Registry | Harbor | ECR | Harbor |
-| DNS Management | External-DNS (MikroTik) | External-DNS (Route53) | External-DNS (Cloudflare) |
+| Service            | Local (Talos)           | AWS                    | Hetzner                   |
+| ------------------ | ----------------------- | ---------------------- | ------------------------- |
+| Block Storage      | OpenEBS                 | EBS CSI                | Hetzner CSI               |
+| Load Balancer      | MetalLB                 | (built-in)             | Hetzner LB                |
+| TLS Certs          | cert-manager            | cert-manager           | cert-manager              |
+| Ingress            | Traefik                 | ALB Controller         | Traefik                   |
+| Object Storage     | MinIO                   | S3                     | Hetzner Object Storage    |
+| Container Registry | Harbor                  | ECR                    | Harbor                    |
+| DNS Management     | External-DNS (MikroTik) | External-DNS (Route53) | External-DNS (Cloudflare) |
 
 ## Getting Started
 
@@ -112,3 +115,50 @@ Alternatively, you can manually create a JSON file with the following structure:
 ```
 
 Then, you can add this to the `local-networking` secret in Google Secret Manager.
+
+## Headscale VPN Management
+
+The VPN infrastructure is built on [Headscale](https://headscale.net/) (self-hosted Tailscale control server) running on the `poenttoe` host.
+
+- **Control Server URL:** `https://head.kalski.xyz`
+- **Internal VPN Domain:** `vpn.kalski.xyz`
+- **Public DNS:**
+  - `head.kalski.xyz` -> Points to `poenttoe` public IP (managed via Terraform).
+- **Internal DNS (VPN Only):**
+  - `*.zima.kalski.xyz` records point to `zima` VPN IP.
+  - Managed via `/var/lib/headscale/dns.json` on `poenttoe`.
+
+### Adding a New User
+
+1.  **Generate a Pre-Auth Key:**
+    SSH into `poenttoe` and run:
+
+    ```bash
+    # Check User ID
+    headscale users list
+
+    # Create a reusable key valid for 24 hours using the User ID
+    headscale preauthkeys create --user [USER_ID] --reusable --expiration 24h
+    ```
+
+2.  **Share Instructions:**
+    Send the user the key and tell them to:
+    - Install Tailscale.
+    - Set **Login Server** to `https://head.kalski.xyz`.
+    - Log in using the Auth Key.
+
+### Registering a Machine Manually
+
+If not using a pre-auth key:
+
+1.  **User:** Runs `tailscale up --login-server https://head.kalski.xyz` and gets a machine key.
+2.  **Admin:** Runs `headscale nodes register --user [USER_ID] --key [MACHINE_KEY]` on `poenttoe`.
+
+### Internal DNS Management
+
+To add new services to the VPN DNS:
+
+1.  SSH into `poenttoe`.
+2.  Edit `/var/lib/headscale/dns.json`.
+3.  Add the new A record pointing to the `zima` VPN IP.
+4.  Restart Headscale: `systemctl restart headscale`.
