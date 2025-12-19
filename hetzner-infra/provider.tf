@@ -8,6 +8,10 @@ terraform {
       version = "~> 1.0"
       source  = "hetznercloud/hcloud"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -18,4 +22,8 @@ provider "google" {
 
 provider "hcloud" {
   token = local.config["hcloud_token"]
+}
+
+provider "cloudflare" {
+  api_token = local.config["cf_dns_api_token"]
 }
