@@ -55,6 +55,24 @@ resource "hcloud_firewall" "headscale" {
   }
 }
 
+# Allow inbound ZeroTier connections so poenttoe can act as a relay.
+# Poenttoe has a stable public IP and can help improve connectivity when:
+# - kuberack is at a remote location behind restrictive NAT
+# - Direct peer-to-peer connections fail between network members
+# - ZeroTier needs a relay path with lower latency than random public relays
+# While MikroTik RouterOS doesn't support ZeroTier moons (custom root servers),
+# any network member with a public IP and inbound connectivity automatically
+# becomes a relay candidate, improving overall network resilience.
+resource "hcloud_firewall" "zerotier" {
+  name = "zerotier"
+  rule {
+    direction  = "in"
+    protocol   = "udp"
+    port       = "9993"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+}
+
 resource "hcloud_server" "poenttoe" {
   name        = "poenttoe"
   location    = "hel1"
@@ -62,7 +80,7 @@ resource "hcloud_server" "poenttoe" {
   image       = "ubuntu-24.04"
 
   ssh_keys           = [data.hcloud_ssh_key.mac_personal.id]
-  firewall_ids       = concat([hcloud_firewall.deny_all.id, hcloud_firewall.headscale.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
+  firewall_ids       = concat([hcloud_firewall.deny_all.id, hcloud_firewall.zerotier.id, hcloud_firewall.headscale.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
   user_data          = local.nixos_infect_cloud_config
   delete_protection  = true
   rebuild_protection = true
