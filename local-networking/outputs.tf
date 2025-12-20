@@ -28,13 +28,13 @@ output "external_dns_username" {
 }
 
 output "kuberack_domain" {
-  description = "Kuberack RB5009 domain name for API access"
-  value       = local.kuberack_rb5009.domain_name
+  description = "Kuberack router domain name for API access"
+  value       = local.kuberack.domain_name
 }
 
 output "stationary_domain" {
-  description = "Stationary hEX S domain name for API access"
-  value       = local.stationary_hex_s.domain_name
+  description = "Stationary router domain name for API access"
+  value       = local.stationary.domain_name
 }
 
 output "zerotier_network_id" {

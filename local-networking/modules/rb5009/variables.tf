@@ -45,12 +45,16 @@ variable "wan_interface" {
   type = string
 }
 
-variable "stationary_network" {
-  description = "The stationary network CIDR (destination for routing)"
-  type        = string
+variable "enable_cake" {
+  description = "Enable CAKE QoS on WAN interface"
+  type        = bool
+  default     = true
 }
 
-variable "stationary_gateway" {
-  description = "Gateway IP to reach the stationary network via transit link"
-  type        = string
+variable "peers" {
+  description = "Peer networks to route to via transit link"
+  type = map(object({
+    network = string
+    gateway = string
+  }))
 }

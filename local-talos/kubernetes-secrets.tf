@@ -22,11 +22,11 @@ resource "kubernetes_secret" "mikrotik_credentials" {
   }
 }
 
-resource "kubernetes_secret" "mikrotik_credentials_hex_s" {
+resource "kubernetes_secret" "mikrotik_credentials_stationary" {
   depends_on = [kubernetes_namespace.external_dns]
 
   metadata {
-    name      = "mikrotik-credentials-hex-s"
+    name      = "mikrotik-credentials-stationary"
     namespace = "external-dns"
   }
 
@@ -56,18 +56,18 @@ resource "kubernetes_secret" "mktxp_config" {
 
   data = {
     "mktxp.conf" = <<-EOT
-      [rb5009]
+      [kuberack]
       hostname = ${data.terraform_remote_state.networking.outputs.kuberack_domain}
       port = 8729
       username = ${local.config["mktxp"]["username"]}
-      password = ${local.config["mktxp"]["rb5009_password"]}
+      password = ${local.config["mktxp"]["kuberack_rb5009_password"]}
       use_ssl = True
 
-      [hexs]
+      [stationary]
       hostname = ${data.terraform_remote_state.networking.outputs.stationary_domain}
       port = 8729
       username = ${local.config["mktxp"]["username"]}
-      password = ${local.config["mktxp"]["hex_s_password"]}
+      password = ${local.config["mktxp"]["stationary_rb5009_password"]}
       use_ssl = True
     EOT
   }

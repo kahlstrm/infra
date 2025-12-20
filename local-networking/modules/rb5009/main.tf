@@ -17,13 +17,14 @@ resource "routeros_ip_address" "transit_address" {
   address   = var.config.transit_address
 }
 
-resource "routeros_ip_route" "stationary_lan_primary" {
-  dst_address   = var.stationary_network
+resource "routeros_ip_route" "peer_lan" {
+  for_each      = var.peers
+  dst_address   = each.value.network
   disabled      = false
-  gateway       = var.stationary_gateway
+  gateway       = each.value.gateway
   check_gateway = "ping"
   distance      = 1
-  comment       = "Primary route to stationary LAN via transit link"
+  comment       = "Primary route to ${each.key} LAN via transit link"
 }
 
 module "dhcp_lan" {
@@ -49,6 +50,7 @@ resource "routeros_file" "bootstrap_script" {
 }
 
 module "cake" {
+  count         = var.enable_cake ? 1 : 0
   source        = "../cake/"
   down_mbps     = 800
   up_mbps       = 80

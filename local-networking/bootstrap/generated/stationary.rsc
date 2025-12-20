@@ -13,7 +13,7 @@
 #                          USER-CONFIGURABLE PARAMETERS
 # ------------------------------------------------------------------------------
 # --- System Identity ---
-:local systemIdentity "stationary-hex-s"
+:local systemIdentity "stationary"
 
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
@@ -83,8 +83,8 @@
 
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
-/ip dns static add name="kuberack-rb5009.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
-/ip dns static add name="stationary-hex-s.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
+/ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={
@@ -94,7 +94,7 @@
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
-/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to RB5009 kuberack for management"
+/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to kuberack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.

@@ -33,19 +33,31 @@ variable "ALLOW_INSECURE" {
   type    = bool
 }
 
+variable "stationary_hosturl" {
+  description = "Hostname for stationary router (override during migration)"
+  default     = "stationary.networking.kalski.xyz"
+  type        = string
+}
+
+variable "kuberack_hosturl" {
+  description = "Hostname for kuberack router (override during migration)"
+  default     = "kuberack.networking.kalski.xyz"
+  type        = string
+}
+
 provider "routeros" {
-  alias    = "stationary_hex_s"
-  hosturl  = "stationary-hex-s.networking.kalski.xyz"
-  username = local.config["hex_s"]["username"]
-  password = local.config["hex_s"]["password"]
+  alias    = "stationary"
+  hosturl  = var.stationary_hosturl
+  username = local.config["stationary_rb5009"]["username"]
+  password = local.config["stationary_rb5009"]["password"]
   insecure = var.ALLOW_INSECURE
 }
 
 provider "routeros" {
-  alias    = "kuberack_rb5009"
-  hosturl  = "kuberack-rb5009.networking.kalski.xyz"
-  username = local.config["rb5009"]["username"]
-  password = local.config["rb5009"]["password"]
+  alias    = "kuberack"
+  hosturl  = var.kuberack_hosturl
+  username = local.config["kuberack_rb5009"]["username"]
+  password = local.config["kuberack_rb5009"]["password"]
   insecure = var.ALLOW_INSECURE
 }
 

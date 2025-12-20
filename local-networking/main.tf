@@ -1,5 +1,3 @@
-
-
 locals {
   stationary_lan = {
     network          = "10.1.1.0/24"
@@ -70,24 +68,24 @@ locals {
     stationary_ipv6      = "fd00:de:ad:ff::2"
     stationary_interface = "ether2"
   }
-  stationary_hex_s = {
+  stationary = {
     ip                = local.stationary_lan.gateway_ip
     zerotier_ip       = "10.255.255.2"
-    domain_name       = "stationary-hex-s.networking.kalski.xyz"
+    domain_name       = "stationary.networking.kalski.xyz"
     wan_interface     = "ether1"
     transit_address   = local.transit_network.stationary_address
     transit_ipv6      = local.transit_network.stationary_ipv6
     transit_interface = local.transit_network.stationary_interface
   }
-  kuberack_rb5009 = {
+  kuberack = {
     transit_address   = local.transit_network.kuberack_address
     transit_ipv6      = local.transit_network.kuberack_ipv6
     transit_interface = "ether1"
-    ip                   = "10.10.10.1"
-    ipv6                 = "fd00:de:ad:10::1"
-    zerotier_ip          = "10.255.255.1"
-    domain_name          = "kuberack-rb5009.networking.kalski.xyz"
-    wan_interface        = "ether8"
+    ip                = "10.10.10.1"
+    ipv6              = "fd00:de:ad:10::1"
+    zerotier_ip       = "10.255.255.1"
+    domain_name       = "kuberack.networking.kalski.xyz"
+    wan_interface     = "ether8"
   }
   kuberack_network = {
     network = "10.10.10.0/24"
@@ -98,12 +96,12 @@ locals {
     pool_ranges     = ["10.10.10.100-10.10.10.254"]
   }
   all_router_dns_records = {
-    "stationary-hex-s.networking.kalski.xyz" = {
-      ip   = local.stationary_hex_s.ip
+    "stationary.networking.kalski.xyz" = {
+      ip   = local.stationary.ip
       ipv6 = "fd00:de:ad:1::3"
     },
-    "kuberack-rb5009.networking.kalski.xyz" = {
-      ip   = local.kuberack_rb5009.ip
+    "kuberack.networking.kalski.xyz" = {
+      ip   = local.kuberack.ip
       ipv6 = "fd00:de:ad:10::1"
     }
   }
@@ -117,11 +115,11 @@ locals {
 module "stationary" {
   source = "./modules/stationary"
   providers = {
-    routeros.hex_s = routeros.stationary_hex_s
+    routeros.stationary = routeros.stationary
   }
-  hex_s_config = {
-    bootstrap_script = module.bootstrap_script["stationary_hex_s"]
-    device_config    = local.stationary_hex_s
+  config = {
+    bootstrap_script = module.bootstrap_script["stationary"]
+    device_config    = local.stationary
     dhcp_config = {
       server_name     = local.stationary_lan.dhcp_server_name
       network_address = local.stationary_lan.network
@@ -130,8 +128,14 @@ module "stationary" {
     static_leases    = local.stationary_lan_static_leases_and_records
     bridge_interface = "local-bridge"
     dns_a_records    = local.dns_a_record
-    kuberack_network = local.kuberack_network.network
-    kuberack_gateway = split("/", local.kuberack_rb5009.transit_address)[0]
+    wan_interface    = local.stationary.wan_interface
+    enable_cake      = false
+    peers = {
+      kuberack = {
+        network = local.kuberack_network.network
+        gateway = split("/", local.kuberack.transit_address)[0]
+      }
+    }
   }
 }
 
@@ -139,17 +143,17 @@ module "stationary" {
 module "zerotier" {
   source = "./modules/zerotier"
   providers = {
-    routeros.stationary = routeros.stationary_hex_s
-    routeros.kuberack   = routeros.kuberack_rb5009
+    routeros.stationary = routeros.stationary
+    routeros.kuberack   = routeros.kuberack
     zerotier            = zerotier
   }
   stationary = {
-    internal_ip = local.stationary_hex_s.ip
-    zerotier_ip = local.stationary_hex_s.zerotier_ip
+    internal_ip = local.stationary.ip
+    zerotier_ip = local.stationary.zerotier_ip
   }
   kuberack = {
-    internal_ip = local.kuberack_rb5009.ip
-    zerotier_ip = local.kuberack_rb5009.zerotier_ip
+    internal_ip = local.kuberack.ip
+    zerotier_ip = local.kuberack.zerotier_ip
   }
   poenttoe_ip = local.external_dns_records["poenttoe.kalski.xyz"].ip
 }
@@ -157,33 +161,33 @@ module "zerotier" {
 module "mktxp_kuberack" {
   source = "./modules/mktxp-user"
   providers = {
-    routeros = routeros.kuberack_rb5009
+    routeros = routeros.kuberack
   }
   username = local.config["mktxp"]["username"]
-  password = local.config["mktxp"]["rb5009_password"]
+  password = local.config["mktxp"]["kuberack_rb5009_password"]
 }
 
 module "mktxp_stationary" {
   source = "./modules/mktxp-user"
   providers = {
-    routeros = routeros.stationary_hex_s
+    routeros = routeros.stationary
   }
   username = local.config["mktxp"]["username"]
-  password = local.config["mktxp"]["hex_s_password"]
+  password = local.config["mktxp"]["stationary_rb5009_password"]
 }
 
 module "external_dns_kuberack" {
   source = "./modules/external-dns-user"
   providers = {
-    routeros = routeros.kuberack_rb5009
+    routeros = routeros.kuberack
   }
   external_dns_password = local.config["external_dns_password"]
 }
 
-module "external_dns_hex_s" {
+module "external_dns_stationary" {
   source = "./modules/external-dns-user"
   providers = {
-    routeros = routeros.stationary_hex_s
+    routeros = routeros.stationary
   }
   external_dns_password = local.config["external_dns_password"]
 }
@@ -191,55 +195,60 @@ module "external_dns_hex_s" {
 module "kuberack" {
   source = "./modules/kuberack"
   providers = {
-    routeros.rb5009 = routeros.kuberack_rb5009
+    routeros.kuberack = routeros.kuberack
   }
-  rb5009_config = {
-    bootstrap_script   = module.bootstrap_script["kuberack_rb5009"]
-    device_config      = local.kuberack_rb5009
-    lan_static_leases  = local.kuberack_lan_static_leases_and_records
-    lan_dhcp_config    = local.kuberack_dhcp_config
-    bridge_interface   = "kuberack-bridge"
-    dns_a_records      = local.dns_a_record
-    wan_interface      = local.bootstrap_configs.kuberack_rb5009.wan_interface
-    stationary_network = local.stationary_lan.network
-    stationary_gateway = split("/", local.stationary_hex_s.transit_address)[0]
+  config = {
+    bootstrap_script  = module.bootstrap_script["kuberack"]
+    device_config     = local.kuberack
+    lan_static_leases = local.kuberack_lan_static_leases_and_records
+    lan_dhcp_config   = local.kuberack_dhcp_config
+    bridge_interface  = "kuberack-bridge"
+    dns_a_records     = local.dns_a_record
+    wan_interface     = local.bootstrap_configs.kuberack.wan_interface
+    enable_cake       = true
+    peers = {
+      stationary = {
+        network = local.stationary_lan.network
+        gateway = split("/", local.stationary.transit_address)[0]
+      }
+    }
   }
 }
 
-module "stationary_hex_s_cert" {
+module "stationary_cert" {
   source = "./modules/cert"
   providers = {
-    routeros = routeros.stationary_hex_s
+    routeros = routeros.stationary
     acme     = acme
   }
   account_key_pem  = acme_registration.reg.account_key_pem
   cf_dns_api_token = local.config["cf_dns_api_token"]
-  domain           = local.stationary_hex_s.domain_name
+  domain           = local.stationary.domain_name
 }
 
-module "kuberack_rb5009_cert" {
+module "kuberack_cert" {
+  source = "./modules/cert"
   providers = {
-    routeros = routeros.kuberack_rb5009
+    routeros = routeros.kuberack
     acme     = acme
   }
-  source           = "./modules/cert"
   account_key_pem  = acme_registration.reg.account_key_pem
   cf_dns_api_token = local.config["cf_dns_api_token"]
-  domain           = local.kuberack_rb5009.domain_name
+  domain           = local.kuberack.domain_name
 }
 
 resource "routeros_system_user_sshkeys" "admin_keys_stationary" {
-  provider = routeros.stationary_hex_s
+  provider = routeros.stationary
   for_each = nonsensitive(local.config["ssh_public_keys"])
-  user     = local.config["hex_s"]["username"]
+  user     = local.config["stationary_rb5009"]["username"]
   key      = each.value
   comment  = each.key
 }
 
 resource "routeros_system_user_sshkeys" "admin_keys_kuberack" {
-  provider = routeros.kuberack_rb5009
+  provider = routeros.kuberack
   for_each = nonsensitive(local.config["ssh_public_keys"])
-  user     = local.config["rb5009"]["username"]
+  user     = local.config["kuberack_rb5009"]["username"]
   key      = each.value
   comment  = each.key
 }

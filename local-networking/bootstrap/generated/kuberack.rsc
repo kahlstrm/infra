@@ -13,7 +13,7 @@
 #                          USER-CONFIGURABLE PARAMETERS
 # ------------------------------------------------------------------------------
 # --- System Identity ---
-:local systemIdentity "kuberack-rb5009"
+:local systemIdentity "kuberack"
 
 # --- Local LAN Configuration ---
 :local localBridgeName "kuberack-bridge"
@@ -83,8 +83,8 @@
 
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
-/ip dns static add name="kuberack-rb5009.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
-/ip dns static add name="stationary-hex-s.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
+/ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={

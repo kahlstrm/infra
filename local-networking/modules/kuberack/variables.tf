@@ -1,4 +1,4 @@
-variable "rb5009_config" {
+variable "config" {
   type        = any
-  description = "RB5009 configuration - see modules/rb5009/variables.tf for schema"
+  description = "Kuberack router configuration - see modules/rb5009/variables.tf for schema"
 }

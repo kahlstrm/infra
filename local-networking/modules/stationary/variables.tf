@@ -1,4 +1,4 @@
-variable "hex_s_config" {
+variable "config" {
   type        = any
-  description = "hEX S configuration - see modules/hex-s/variables.tf for schema"
+  description = "Stationary router configuration - see modules/rb5009/variables.tf for schema"
 }

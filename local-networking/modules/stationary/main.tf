@@ -2,24 +2,25 @@ terraform {
   required_providers {
     routeros = {
       source                = "terraform-routeros/routeros"
-      configuration_aliases = [routeros.hex_s]
+      configuration_aliases = [routeros.stationary]
     }
   }
 }
 
-module "hex_s" {
-  source = "../hex-s"
+module "rb5009" {
+  source = "../rb5009"
 
   providers = {
-    routeros = routeros.hex_s
+    routeros = routeros.stationary
   }
 
-  bootstrap_script = var.hex_s_config.bootstrap_script
-  config           = var.hex_s_config.device_config
-  dhcp_config      = var.hex_s_config.dhcp_config
-  static_leases    = var.hex_s_config.static_leases
-  bridge_interface = var.hex_s_config.bridge_interface
-  dns_a_records    = var.hex_s_config.dns_a_records
-  kuberack_network = var.hex_s_config.kuberack_network
-  kuberack_gateway = var.hex_s_config.kuberack_gateway
+  bootstrap_script  = var.config.bootstrap_script
+  config            = var.config.device_config
+  lan_dhcp_config   = var.config.dhcp_config
+  lan_static_leases = var.config.static_leases
+  bridge_interface  = var.config.bridge_interface
+  dns_a_records     = var.config.dns_a_records
+  wan_interface     = var.config.wan_interface
+  peers             = var.config.peers
+  enable_cake       = var.config.enable_cake
 }
