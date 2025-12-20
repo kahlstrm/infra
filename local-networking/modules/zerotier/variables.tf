@@ -1,14 +1,16 @@
 variable "kuberack" {
   type = object({
-    internal_ip = string
-    zerotier_ip = string
+    ip            = string
+    zerotier_ip   = string
+    wan_interface = string
   })
 }
 
 variable "stationary" {
   type = object({
-    internal_ip = string
-    zerotier_ip = string
+    ip            = string
+    zerotier_ip   = string
+    wan_interface = string
   })
 }
 

@@ -150,14 +150,8 @@ module "zerotier" {
     routeros.kuberack   = routeros.kuberack
     zerotier            = zerotier
   }
-  stationary = {
-    internal_ip = local.stationary.ip
-    zerotier_ip = local.stationary.zerotier_ip
-  }
-  kuberack = {
-    internal_ip = local.kuberack.ip
-    zerotier_ip = local.kuberack.zerotier_ip
-  }
+  stationary  = local.stationary
+  kuberack    = local.kuberack
   poenttoe_ip = local.external_dns_records["poenttoe.kalski.xyz"].ip
 }
 

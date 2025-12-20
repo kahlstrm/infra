@@ -14,7 +14,7 @@ resource "zerotier_network" "network" {
   name = "kalski.xyz"
   dns {
     domain  = "kalski.xyz"
-    servers = [var.kuberack.internal_ip, var.stationary.internal_ip]
+    servers = [var.kuberack.ip, var.stationary.ip]
   }
   assignment_pool {
     start = "10.255.255.100"
@@ -41,11 +41,15 @@ resource "zerotier_member" "kuberack" {
   no_auto_assign_ips      = true
 }
 
+# Bind ZeroTier only to WAN interface to prevent it from using the transit link.
+# When transit is up, direct routing is used (distance 1), so ZeroTier via transit is redundant.
+# When transit is down, ZeroTier needs a WAN path - binding only to WAN ensures this path
+# is always established rather than requiring slow re-discovery after transit failure.
 resource "routeros_zerotier" "kuberack_zt1" {
   provider   = routeros.kuberack
   comment    = "ZeroTier Central - Kuberack RB5009"
   identity   = zerotier_identity.kuberack.private_key
-  interfaces = ["all"]
+  interfaces = [var.kuberack.wan_interface]
   name       = "zt-tunnel"
   port       = 9994
 }
@@ -78,11 +82,12 @@ resource "zerotier_member" "stationary" {
   no_auto_assign_ips      = true
 }
 
+# See comment on kuberack_zt1 for WAN-only binding rationale
 resource "routeros_zerotier" "stationary_zt1" {
   provider   = routeros.stationary
   comment    = "ZeroTier Central - Stationary RB5009UGS"
   identity   = zerotier_identity.stationary.private_key
-  interfaces = ["all"]
+  interfaces = [var.stationary.wan_interface]
   name       = "zt-tunnel"
   port       = 9994
 }
@@ -118,26 +123,28 @@ resource "routeros_interface_list_member" "stationary_zerotier_mgmt" {
   comment   = "Allow management via ZeroTier"
 }
 
-# Static routes for RB5009 (fallback over ZeroTier)
+# Fallback routes over ZeroTier (distance 200, only used when transit link is down).
+# check_gateway is set to "none" to keep routes always active - using "ping" would cause
+# the route to become inactive during ZeroTier path discovery, creating a chicken-and-egg
+# problem where traffic can't flow until the ping check succeeds.
 resource "routeros_ip_route" "kuberack_stationary_lan_zerotier" {
   provider      = routeros.kuberack
   disabled      = false
   dst_address   = "10.1.1.0/24"
   gateway       = var.stationary.zerotier_ip
   distance      = 200
-  check_gateway = "ping"
+  check_gateway = "none"
   comment       = "Fallback route to stationary LAN via ZeroTier"
   depends_on    = [routeros_ip_address.kuberack_zerotier_ip]
 }
 
-# Static routes for stationary router (fallback over ZeroTier)
 resource "routeros_ip_route" "stationary_kuberack_lan_zerotier" {
   provider      = routeros.stationary
   disabled      = false
   dst_address   = "10.10.10.0/24"
   gateway       = var.kuberack.zerotier_ip
   distance      = 200
-  check_gateway = "ping"
+  check_gateway = "none"
   comment       = "Fallback route to Kuberack LAN via ZeroTier"
   depends_on    = [routeros_ip_address.stationary_zerotier_ip]
 }
