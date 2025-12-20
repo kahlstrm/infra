@@ -17,17 +17,18 @@
 
 # --- Local LAN Configuration ---
 :local localBridgeName "local-bridge"
-:local localBridgePorts {"ether3"; "ether4"; "ether5"}
-:local localIpv6Address "fd00:de:ad:1::3/64"
+:local localBridgePorts {"ether2"; "ether3"; "ether4"; "ether5"; "ether6"; "sfp-sfpplus1"}
+:local localIpv6Address "fd00:de:ad:1::1/64"
 
 # --- Transit Link Configuration ---
 # This is a dedicated interface for the stationary<->kuberack wired link.
 # Optional set transitInterface empty to disable
-:local transitInterface "ether2"
+:local transitInterface "ether1"
 :local transitIpv6AddressNetwork "fd00:de:ad:ff::2/64"
 
 # --- WAN Configuration ---
-:local wanInterface "ether1"
+:local wanInterface "ether8"
+:local maintenancePort "ether7"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -54,6 +55,17 @@
 };
 /interface list add name=WAN comment="bootstrap"
 /interface list add name=LAN comment="bootstrap"
+/interface list add name=MGMT_ALLOWED comment="bootstrap"
+
+# --- Maintenance Port Setup ---
+:if ($maintenancePort != "") do={
+  /ip address add address=192.168.88.1/24 interface=$maintenancePort comment="bootstrap: maintenance"
+  /ip pool add name=maintenance-pool ranges=192.168.88.10-192.168.88.254
+  /ip dhcp-server add name=maintenance-dhcp interface=$maintenancePort address-pool=maintenance-pool disabled=no
+  /ip dhcp-server network add address=192.168.88.0/24 gateway=192.168.88.1
+  /interface list member add list=MGMT_ALLOWED interface=$maintenancePort comment="bootstrap: maintenance"
+}
+
 # --- Local Bridge Setup ---
 # Create a bridge for the local LAN.
 :if ($createLocalBridge) do={
@@ -84,7 +96,7 @@
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
 /ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
-/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::3 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::1 type=AAAA comment="bootstrap"
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={
@@ -94,11 +106,10 @@
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
-/ipv6 route add dst-address=fd00:de:ad:10::/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to kuberack for management"
+/ipv6 route add dst-address=fd00:de:ad:10::1/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to kuberack for management"
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
-/interface list add name=MGMT_ALLOWED comment="bootstrap"
 :if ($createLocalBridge) do={
   /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
@@ -111,7 +122,7 @@
 
 # --- Global Services ---
 # Enable DNS and configure DHCP clients on the WAN for dual-stack connectivity.
-/ip dns set allow-remote-requests=yes
+/ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001
 /ip dhcp-client add interface=$wanInterface disabled=no use-peer-dns=no comment="bootstrap"
 /ipv6 settings set accept-router-advertisements=yes forward=yes
 /ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no use-peer-dns=no comment="bootstrap"
@@ -131,7 +142,7 @@
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop all not coming from LAN"
   filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept in ipsec policy"
   filter add chain=forward action=accept ipsec-policy=out,ipsec comment="bootstrap: accept out ipsec policy"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack"
+  filter add chain=forward action=fasttrack-connection connection-state=established,related in-interface-list=LAN out-interface-list=LAN comment="bootstrap: fasttrack"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related, untracked"
   filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=forward action=drop connection-state=new connection-nat-state=!dstnat in-interface-list=WAN comment="bootstrap: drop all from WAN not DSTNATed"
@@ -157,7 +168,7 @@
   filter add chain=input action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
   filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
   filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related comment="bootstrap: fasttrack6"
+  filter add chain=forward action=fasttrack-connection connection-state=established,related in-interface-list=LAN out-interface-list=LAN comment="bootstrap: fasttrack6"
   filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
   filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
   filter add chain=forward action=drop src-address-list=bad_ipv6 comment="bootstrap: drop packets with bad src ipv6"
@@ -205,17 +216,20 @@
   :log info "ZeroTier package is already installed and enabled.";
 } else={
   :log info "ZeroTier package not found or is disabled; attempting to install.";
-  /system package update check-for-updates;
+  /system package update check-for-updates duration=10s;
   :delay 5s;
   :if ([/system package print count-only where name="zerotier"] > 0) do={
       :log info "Found ZeroTier package, enabling it now.";
       /system package enable zerotier;
       :log info "Rebooting to apply package changes.";
+      /log/print file=boostrap.txt
       :execute script="/system package apply-changes"
+      :delay 1s; ;quit;
   } else={
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }
 # reboot for ipv6 accept-router-advertisement setting to be enabled
 :log info "Rebooting for ipv6 accept-router-advertisement change"
+/log/print file=boostrap.txt
 :execute script="/system reboot"

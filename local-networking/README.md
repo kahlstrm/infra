@@ -6,8 +6,9 @@ This manages the MikroTik routers that provide redundant connectivity between th
 
 The network is composed of two main logical networks, connected by a 2.5Gbps interconnect when docked.
 
-- **Kuberack LAN**: `10.10.10.0/24` (portable stack on the RB5009 + CRS305 switch)
-- **Stationary LAN**: `10.1.1.0/24` (stationary stack; single gateway/DHCP on the stationary router at `10.1.1.1`)
+- **Kuberack LAN**: `10.10.10.0/24` / `fd00:de:ad:10::/64` (portable stack on the RB5009 + CRS305 switch)
+- **Stationary LAN**: `10.1.1.0/24` / `fd00:de:ad:1::/64` (stationary stack; single gateway/DHCP on the stationary router at `10.1.1.1`)
+- **Transit Link**: `10.254.254.0/30` / `fd00:de:ad:ff::/64` (point-to-point between routers)
 - **ZeroTier VPN**: `10.255.255.0/24` (for site-to-site connectivity when separated)
 
 ### Network Diagram
@@ -16,18 +17,18 @@ The network is composed of two main logical networks, connected by a 2.5Gbps int
 graph TB
     subgraph "Kuberack (Portable)"
         WAN1[Internet WAN 1]
-        RB5009[RB5009<br/>Gateway 10.10.10.1]
+        RB5009[RB5009UPr+ PoE<br/>10.10.10.1 / fd00:de:ad:10::1]
         CRS305[CRS305<br/>PoE-powered Switch]
         K8S[Talos/Kubernetes cluster<br/>10.10.10.0/24]
 
         WAN1 -- "ether8" --> RB5009
-        RB5009 -- "PoE" --> CRS305
+        RB5009 -- "ether2-7, sfp+" --> CRS305
         CRS305 --> K8S
     end
 
     subgraph "Stationary"
         WAN2[Internet WAN 2]
-        RB5009S[RB5009UGS<br/>Stationary Gateway 10.1.1.1]
+        RB5009S[RB5009UGS+<br/>10.1.1.1 / fd00:de:ad:1::1]
         CRS310[CRS310<br/>Managed Switch]
         POESWITCH[8-port 2.5G PoE Switch]
         U7[U7 Pro Wall AP]
@@ -35,9 +36,11 @@ graph TB
         PANNU[pannu<br/>10.1.1.10]
         ZIMA[Zimaboard 2]
         JETKVM[JetKVM<br/>10.1.1.11]
+        MAINT[Maintenance Port<br/>192.168.88.1]
 
-        WAN2 -- "ether1 (2.5G)" --> RB5009S
-        RB5009S -- "SFP+" --> CRS310
+        WAN2 -- "ether8" --> RB5009S
+        RB5009S -- "ether2-6, sfp+" --> CRS310
+        RB5009S -- "ether7" --> MAINT
         RB5009S --> JETKVM
         CRS310 -- "SFP+" --> POESWITCH
         POESWITCH -- "PoE" --> U7
@@ -46,8 +49,7 @@ graph TB
         CRS310 --> ZIMA
     end
 
-    RB5009 -. "ether1\n10.254.254.1/30" .-> |"transit link"| RB5009S
-    RB5009S -. "ether2\n10.254.254.2/30" .-  RB5009
+    RB5009 <-. "ether1 ↔ ether1<br/>fd00:de:ad:ff::/64" .-> RB5009S
     RB5009 <-.->|ZeroTier when separated| RB5009S
 ```
 
@@ -59,8 +61,8 @@ This network is designed for high performance when docked and graceful reachabil
 
 ### Docked (Normal High-Performance Operation)
 
-- **Stationary Gateway**: The RB5009UGS is the sole gateway/DHCP/DNS for `10.1.1.0/24` (`10.1.1.1`).
-- **Transit Link**: Dedicated point-to-point link between kuberack (ether1) and stationary (ether2) using `10.254.254.0/30` subnet. This ensures symmetric routing - all inter-LAN traffic flows through both routers.
+- **Stationary Gateway**: The RB5009UGS+ is the sole gateway/DHCP/DNS for `10.1.1.0/24` (`10.1.1.1`).
+- **Transit Link**: Dedicated point-to-point link between kuberack (ether1) and stationary (ether1) using `10.254.254.0/30` (IPv4) and `fd00:de:ad:ff::/64` (IPv6). This ensures symmetric routing - all inter-LAN traffic flows through both routers.
 - **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.254.254.1`; kuberack has a static route to `10.1.1.0/24` via `10.254.254.2`. Internet for each LAN flows out its respective WAN.
 
 ### Separated Mode (Fallback Operation)
@@ -72,12 +74,16 @@ This network is designed for high performance when docked and graceful reachabil
 
 **Bootstrap script (one-time after reset)**
 - Set system identity, build LAN bridge (ports, MAC), enable IPv6 SLAAC/RA on the bridge.
-- Optionally add the wired interconnect interface with IPv6 (no IPv4).
+- Configure transit interface with IPv6 address and add to LAN/MGMT_ALLOWED lists.
+- Add symmetric IPv6 management routes so routers can reach each other during bootstrap:
+  - Stationary: route to `fd00:de:ad:10::/64` via `fd00:de:ad:ff::1` (kuberack transit)
+  - Kuberack: route to `fd00:de:ad:1::/64` via `fd00:de:ad:ff::2` (stationary transit)
+- Add static DNS AAAA records for both routers (resolving to local bridge IPs).
 - Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client + IPv6 PD, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
 - No IPv4 addresses, no DHCP servers, no static routes—left to Terraform.
 
 **Terraform apply (ongoing)**
-- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether2); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
+- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether1); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
 - DHCP: `stationary-dhcp` for 10.1.1.0/24 with static leases; `kuberack-dhcp` for 10.10.10.0/24 with static leases.
 - DNS: resolver settings plus static records/adlists on both routers.
 - Routing: static route on stationary to `10.10.10.0/24` via `10.254.254.1`; static route on kuberack to `10.1.1.0/24` via `10.254.254.2`; ZeroTier fallback routes (distance 200) both ways.

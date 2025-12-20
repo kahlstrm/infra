@@ -66,16 +66,18 @@ locals {
     stationary_address   = "10.254.254.2/30"
     kuberack_ipv6        = "fd00:de:ad:ff::1"
     stationary_ipv6      = "fd00:de:ad:ff::2"
-    stationary_interface = "ether2"
+    stationary_interface = "ether1"
   }
   stationary = {
     ip                = local.stationary_lan.gateway_ip
+    ipv6              = "fd00:de:ad:1::1"
     zerotier_ip       = "10.255.255.2"
     domain_name       = "stationary.networking.kalski.xyz"
-    wan_interface     = "ether1"
+    wan_interface     = "ether8"
     transit_address   = local.transit_network.stationary_address
     transit_ipv6      = local.transit_network.stationary_ipv6
     transit_interface = local.transit_network.stationary_interface
+    enable_cake       = true
   }
   kuberack = {
     transit_address   = local.transit_network.kuberack_address
@@ -86,6 +88,7 @@ locals {
     zerotier_ip       = "10.255.255.1"
     domain_name       = "kuberack.networking.kalski.xyz"
     wan_interface     = "ether8"
+    enable_cake       = true
   }
   kuberack_network = {
     network = "10.10.10.0/24"
@@ -98,11 +101,11 @@ locals {
   all_router_dns_records = {
     "stationary.networking.kalski.xyz" = {
       ip   = local.stationary.ip
-      ipv6 = "fd00:de:ad:1::3"
+      ipv6 = local.stationary.ipv6
     },
     "kuberack.networking.kalski.xyz" = {
       ip   = local.kuberack.ip
-      ipv6 = "fd00:de:ad:10::1"
+      ipv6 = local.kuberack.ipv6
     }
   }
 }
@@ -129,7 +132,7 @@ module "stationary" {
     bridge_interface = "local-bridge"
     dns_a_records    = local.dns_a_record
     wan_interface    = local.stationary.wan_interface
-    enable_cake      = false
+    enable_cake      = local.stationary.enable_cake
     peers = {
       kuberack = {
         network = local.kuberack_network.network
@@ -205,7 +208,7 @@ module "kuberack" {
     bridge_interface  = "kuberack-bridge"
     dns_a_records     = local.dns_a_record
     wan_interface     = local.bootstrap_configs.kuberack.wan_interface
-    enable_cake       = true
+    enable_cake       = local.kuberack.enable_cake
     peers = {
       stationary = {
         network = local.stationary_lan.network

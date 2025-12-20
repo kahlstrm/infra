@@ -32,6 +32,7 @@
 
 # --- WAN Configuration ---
 :local wanInterface "${wan_interface}"
+:local maintenancePort "${maintenance_port}"
 # ------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -58,6 +59,17 @@
 };
 /interface list add name=WAN comment="bootstrap"
 /interface list add name=LAN comment="bootstrap"
+/interface list add name=MGMT_ALLOWED comment="bootstrap"
+
+# --- Maintenance Port Setup ---
+:if ($maintenancePort != "") do={
+  /ip address add address=192.168.88.1/24 interface=$maintenancePort comment="bootstrap: maintenance"
+  /ip pool add name=maintenance-pool ranges=192.168.88.10-192.168.88.254
+  /ip dhcp-server add name=maintenance-dhcp interface=$maintenancePort address-pool=maintenance-pool disabled=no
+  /ip dhcp-server network add address=192.168.88.0/24 gateway=192.168.88.1
+  /interface list member add list=MGMT_ALLOWED interface=$maintenancePort comment="bootstrap: maintenance"
+}
+
 # --- Local Bridge Setup ---
 # Create a bridge for the local LAN.
 :if ($createLocalBridge) do={
@@ -107,7 +119,6 @@
 #
 # --- System Services ---
 # Allow management access only from trusted interfaces.
-/interface list add name=MGMT_ALLOWED comment="bootstrap"
 :if ($createLocalBridge) do={
   /interface list member add list=MGMT_ALLOWED interface=$localBridgeName comment="bootstrap"
 }
@@ -120,7 +131,7 @@
 
 # --- Global Services ---
 # Enable DNS and configure DHCP clients on the WAN for dual-stack connectivity.
-/ip dns set allow-remote-requests=yes
+/ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001
 /ip dhcp-client add interface=$wanInterface disabled=no use-peer-dns=no comment="bootstrap"
 /ipv6 settings set accept-router-advertisements=yes forward=yes
 /ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool disabled=no use-peer-dns=no comment="bootstrap"
@@ -214,17 +225,20 @@
   :log info "ZeroTier package is already installed and enabled.";
 } else={
   :log info "ZeroTier package not found or is disabled; attempting to install.";
-  /system package update check-for-updates;
+  /system package update check-for-updates duration=10s;
   :delay 5s;
   :if ([/system package print count-only where name="zerotier"] > 0) do={
       :log info "Found ZeroTier package, enabling it now.";
       /system package enable zerotier;
       :log info "Rebooting to apply package changes.";
+      /log/print file=boostrap.txt
       :execute script="/system package apply-changes"
+      :delay 1s; ;quit;
   } else={
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }%{ endif }
 # reboot for ipv6 accept-router-advertisement setting to be enabled
 :log info "Rebooting for ipv6 accept-router-advertisement change"
+/log/print file=boostrap.txt
 :execute script="/system reboot"
