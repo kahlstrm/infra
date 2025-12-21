@@ -69,6 +69,8 @@ resource "kubernetes_secret" "mktxp_config" {
       username = ${local.config["mktxp"]["username"]}
       password = ${local.config["mktxp"]["stationary_rb5009_password"]}
       use_ssl = True
+      # RB5009UGS doesn't have PoE
+      poe = False
     EOT
   }
 }
