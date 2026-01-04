@@ -89,6 +89,20 @@ resource "kubernetes_secret" "alertmanager_telegram" {
   }
 }
 
+resource "kubernetes_secret" "grafana_admin" {
+  depends_on = [kubernetes_namespace.monitoring]
+
+  metadata {
+    name      = "grafana-admin"
+    namespace = "monitoring"
+  }
+
+  data = {
+    admin-user     = "admin"
+    admin-password = local.config["grafana_admin_password"]
+  }
+}
+
 resource "kubernetes_namespace" "cert_manager" {
   depends_on = [talos_cluster_kubeconfig.this]
 
