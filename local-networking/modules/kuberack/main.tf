@@ -24,3 +24,11 @@ module "rb5009" {
   peers             = var.config.peers
   enable_cake       = var.config.enable_cake
 }
+
+resource "routeros_ip_route" "default_via_stationary" {
+  provider    = routeros.kuberack
+  dst_address = "0.0.0.0/0"
+  gateway     = var.config.peers.stationary.gateway
+  distance    = 1
+  comment     = "Default via stationary"
+}

@@ -41,15 +41,13 @@ resource "zerotier_member" "kuberack" {
   no_auto_assign_ips      = true
 }
 
-# Bind ZeroTier only to WAN interface to prevent it from using the transit link.
-# When transit is up, direct routing is used (distance 1), so ZeroTier via transit is redundant.
-# When transit is down, ZeroTier needs a WAN path - binding only to WAN ensures this path
-# is always established rather than requiring slow re-discovery after transit failure.
+# Kuberack uses stationary as upstream, so ZeroTier connects via transit -> stationary -> WAN.
+# Binding to all interfaces allows ZeroTier to use whatever path is available.
 resource "routeros_zerotier" "kuberack_zt1" {
   provider   = routeros.kuberack
   comment    = "ZeroTier Central - Kuberack RB5009"
   identity   = zerotier_identity.kuberack.private_key
-  interfaces = [var.kuberack.wan_interface]
+  interfaces = ["all"]
   name       = "zt-tunnel"
   port       = 9994
 }
