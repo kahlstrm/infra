@@ -31,12 +31,12 @@ Use this JSON shape:
 }
 ```
 
-## NixOS infect
+## Bootstrap Mode
 
-Enable nixos-infect via environment variable:
+Enable temporary public SSH access for initial setup (nixos-infect runs automatically on first boot):
 
 ```bash
-TF_VAR_ENABLE_NIXOS_INFECT=true terraform apply
+TF_VAR_BOOTSTRAP=true terraform apply
 ```
 
 ## ZeroTier Setup

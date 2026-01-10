@@ -32,9 +32,9 @@ graph TB
         CRS310[CRS310<br/>Managed Switch]
         POESWITCH[8-port 2.5G PoE Switch]
         U7[U7 Pro Wall AP]
-        RPI4[RPi 4<br/>Home Assistant + Unifi]
         PANNU[pannu<br/>10.1.1.10]
-        ZIMA[Zimaboard 2]
+        ZIMA[Zimaboard 2<br/>10.1.1.30]
+        HA[RPi 5 Home Assistant<br/>10.1.1.20]
         JETKVM[JetKVM<br/>10.1.1.11]
         MAINT[Maintenance Port<br/>192.168.88.1]
 
@@ -44,7 +44,7 @@ graph TB
         RB5009S --> JETKVM
         CRS310 -- "SFP+" --> POESWITCH
         POESWITCH -- "PoE" --> U7
-        POESWITCH -- "PoE" --> RPI4
+        POESWITCH -- "PoE" --> HA
         CRS310 --> PANNU
         CRS310 --> ZIMA
     end

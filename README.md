@@ -9,9 +9,9 @@ This repository is an experimental playground for managing a personal hardware s
 - [DeskPi RackMate T0](https://deskpi.com/products/deskpi-rackmate-t1-rackmount-10-inch-4u-server-cabinet-for-network-servers-audio-and-video-equipment) - 10" 4U minirack
 - [MikroTik RB5009UPr+S+IN](https://mikrotik.com/product/rb5009upr_s_in) - Main router with PoE
 - [MikroTik CRS305](https://mikrotik.com/product/crs305_1g_4s_in) - PoE-powered switch
-- [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) - PoE-powered Kubernetes controlplane node
-- [Minisforum MS-01](https://minisforumpc.eu/en/products/ms-01) - Primary compute node
-- Future additions: Framework Desktop or additional Minisforums for compute
+- 3x [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) - PoE-powered Kubernetes control plane nodes (c1, c2, c3)
+- [Minisforum MS-01](https://minisforumpc.eu/en/products/ms-01) - Kubernetes worker node (w1)
+- [Minisforum MS-A2](https://minisforumpc.eu/en/products/ms-a2) - Kubernetes worker node (w2)
 
 ### Stationary Setup
 
@@ -19,7 +19,7 @@ This repository is an experimental playground for managing a personal hardware s
 - [MikroTik CRS310-8G+2S+IN](https://mikrotik.com/product/crs310_8g_2s_in) - Main managed switch
 - Unmanaged 8-port 2.5G PoE switch with SFP+
 - [Ubiquiti UniFi U7 Pro Wall](https://eu.store.ui.com/eu/en/products/u7-pro-wall) - WiFi access point
-- [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4/) - Home Assistant + Unifi controller
+- [Raspberry Pi 5](https://www.raspberrypi.com/products/raspberry-pi-5/) - Home Assistant + Unifi controller
 - pannu - Custom built PC
 - [Zimaboard 2](https://www.zimaspace.com/products/single-board2-server) - Secondary compute
 - [JetKVM](https://jetkvm.com/) - IP KVM for pannu

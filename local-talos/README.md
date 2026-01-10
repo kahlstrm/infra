@@ -29,12 +29,21 @@ control_plane_node_config = {
     install_disk  = "/dev/nvme0n1"
     install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
   }
+  "c2.k8s.kalski.xyz" = {
+    install_disk  = "/dev/nvme0n1"
+    install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
+  }
+  "c3.k8s.kalski.xyz" = {
+    install_disk  = "/dev/nvme0n1"
+    install_image = "ghcr.io/talos-rpi5/installer:v1.11.5"
+  }
 }
 
 worker_node_config = {
   "w1.k8s.kalski.xyz" = {
-    install_disk  = "/dev/nvme0n1"
-    install_image = "ghcr.io/siderolabs/installer:v1.11.5"
+    install_disk        = "/dev/nvme0n1"
+    install_image       = "ghcr.io/siderolabs/installer:v1.11.5"
+    storage_disk_serial = "S5GXNF0R218244B"  # for local-storage StorageClass
   }
 }
 ```
@@ -106,13 +115,17 @@ Boot the new node with Talos ISO and verify it gets the expected IP.
 Add the new node to `control_plane_node_config` (control plane) or `worker_node_config` (worker) in local-talos:
 
 ```hcl
-control_plane_node_config = {
-  "c1.k8s.kalski.xyz" = { install_disk = "/dev/nvme0n1", install_image = "ghcr.io/talos-rpi5/installer:v1.11.5" }
-}
-
 worker_node_config = {
-  "w1.k8s.kalski.xyz" = { install_disk = "/dev/nvme0n1", install_image = "ghcr.io/siderolabs/installer:v1.11.5" }
-  "w2.k8s.kalski.xyz" = { install_disk = "/dev/sda", install_image = "ghcr.io/siderolabs/installer:v1.11.5" } # Check with talosctl get disks
+  "w1.k8s.kalski.xyz" = {
+    install_disk        = "/dev/nvme0n1"
+    install_image       = "ghcr.io/siderolabs/installer:v1.11.5"
+    storage_disk_serial = "S5GXNF0R218244B"
+  }
+  "w2.k8s.kalski.xyz" = {
+    install_disk        = "/dev/sda"  # Check with talosctl get disks
+    install_image       = "ghcr.io/siderolabs/installer:v1.11.5"
+    storage_disk_serial = "XXXXXXXX"  # Get serial with talosctl get disks
+  }
 }
 ```
 
@@ -128,5 +141,5 @@ The new node will automatically join the existing cluster.
 
 ### Current Setup (< 3 workers)
 
-- **local-nvme** StorageClass: Uses disk specified by serial (nvme2n1) for local hostpath storage
-- **nvme1n1**: Reserved for future replicated storage
+- **local-storage** StorageClass: Uses disk specified by serial for local hostpath storage at `/var/mnt/local-storage`
+- Replicated storage (Mayastor) disabled until 3+ worker nodes are available
