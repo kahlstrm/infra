@@ -33,6 +33,13 @@ locals {
       storage_disks       = []
       storage_disk_serial = "S5GXNF0R218244B" # nvme2n1 for local-nvme StorageClass
     }
+    "w2.k8s.kalski.xyz" = {
+      install_disk = "/dev/nvme1n1"
+      # Custom image from factory.talos.dev with nvidia extensions; regenerate when upgrading Talos
+      install_image       = "factory.talos.dev/installer/6698d6f136c5bb37ca8bb8482c9084305084da0a5ead1f4dcae760796f8ab3a2:v1.11.6"
+      nvidia_gpu          = true
+      storage_disk_serial = "2450A7403637"
+    }
   }
 }
 
@@ -94,6 +101,9 @@ resource "talos_machine_configuration_apply" "worker" {
       templatefile("${path.module}/templates/user-volume.yaml.tmpl", {
         storage_disk_serial = each.value.storage_disk_serial
       })
+    ] : [],
+    lookup(each.value, "nvidia_gpu", false) ? [
+      file("${path.module}/patches/nvidia-worker.yaml")
     ] : []
   )
 }

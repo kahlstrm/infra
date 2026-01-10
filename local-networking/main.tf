@@ -50,6 +50,10 @@ locals {
       ip          = "10.10.10.21"
       mac_address = local.config["macs"]["w1_k8s"]
     }
+    "w2.k8s.kalski.xyz" = {
+      ip          = "10.10.10.22"
+      mac_address = local.config["macs"]["w2_k8s"]
+    }
   }
 
   kuberack_lan_static_leases_and_records = merge(
