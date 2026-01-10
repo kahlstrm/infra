@@ -16,18 +16,16 @@ The network is composed of two main logical networks, connected by a 2.5Gbps int
 ```mermaid
 graph TB
     subgraph "Kuberack (Portable)"
-        WAN1[Internet WAN 1]
         RB5009[RB5009UPr+ PoE<br/>10.10.10.1 / fd00:de:ad:10::1]
         CRS305[CRS305<br/>PoE-powered Switch]
         K8S[Talos/Kubernetes cluster<br/>10.10.10.0/24]
 
-        WAN1 -- "ether8" --> RB5009
         RB5009 -- "ether2-7, sfp+" --> CRS305
         CRS305 --> K8S
     end
 
     subgraph "Stationary"
-        WAN2[Internet WAN 2]
+        WAN[Internet]
         RB5009S[RB5009UGS+<br/>10.1.1.1 / fd00:de:ad:1::1]
         CRS310[CRS310<br/>Managed Switch]
         POESWITCH[8-port 2.5G PoE Switch]
@@ -38,7 +36,7 @@ graph TB
         JETKVM[JetKVM<br/>10.1.1.11]
         MAINT[Maintenance Port<br/>192.168.88.1]
 
-        WAN2 -- "ether8" --> RB5009S
+        WAN -- "ether8" --> RB5009S
         RB5009S -- "ether2-6, sfp+" --> CRS310
         RB5009S -- "ether7" --> MAINT
         RB5009S --> JETKVM
@@ -49,7 +47,7 @@ graph TB
         CRS310 --> ZIMA
     end
 
-    RB5009 <-. "ether1 ↔ ether1<br/>fd00:de:ad:ff::/64" .-> RB5009S
+    RB5009 -- "ether1 ↔ ether1<br/>Transit + Default Route" --> RB5009S
     RB5009 <-.->|ZeroTier when separated| RB5009S
 ```
 
@@ -59,16 +57,16 @@ _Note: The following describes the target architecture for the network. The impl
 
 This network is designed for high performance when docked and graceful reachability when separated, without VRRP complexity.
 
-### Docked (Normal High-Performance Operation)
+### Docked (Normal Operation)
 
-- **Stationary Gateway**: The RB5009UGS+ is the sole gateway/DHCP/DNS for `10.1.1.0/24` (`10.1.1.1`).
-- **Transit Link**: Dedicated point-to-point link between kuberack (ether1) and stationary (ether1) using `10.254.254.0/30` (IPv4) and `fd00:de:ad:ff::/64` (IPv6). This ensures symmetric routing - all inter-LAN traffic flows through both routers.
-- **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.254.254.1`; kuberack has a static route to `10.1.1.0/24` via `10.254.254.2`. Internet for each LAN flows out its respective WAN.
+- **Stationary Gateway**: The RB5009UGS+ is the sole internet gateway for both LANs.
+- **Transit Link**: Dedicated point-to-point link between kuberack (ether1) and stationary (ether1) using `10.254.254.0/30` (IPv4) and `fd00:de:ad:ff::/64` (IPv6).
+- **Routing**: Stationary has a static route to `10.10.10.0/24` via `10.254.254.1`. Kuberack uses stationary as its default gateway - all internet traffic flows through the transit link to stationary.
 
 ### Separated Mode (Fallback Operation)
 
 - **ZeroTier Paths**: High-distance routes over ZeroTier connect `10.10.10.0/24` and `10.1.1.0/24` when the wired interconnect is absent.
-- **Independent Gateways**: Each site uses its own WAN; ZeroTier only carries cross-site traffic when separated.
+- **Kuberack Upstream**: When separated, kuberack needs its own WAN connection or ZeroTier path to reach the internet.
 
 ## Provisioning Responsibilities
 
