@@ -6,6 +6,10 @@ locals {
     dhcp_server_name = "stationary-dhcp"
   }
   stationary_lan_static_leases_and_records = {
+    "crs310.networking.kalski.xyz" = {
+      ip          = "10.1.1.2"
+      mac_address = local.config["macs"]["crs310"]
+    }
     "p.kalski.xyz" = {
       ip                = "10.1.1.10"
       mac_address       = local.config["macs"]["pannu"]
@@ -59,6 +63,10 @@ locals {
   kuberack_lan_static_leases_and_records = merge(
     local.k8s_control_plane_nodes,
     local.k8s_worker_nodes, {
+      "crs305.networking.kalski.xyz" = {
+        ip          = "10.10.10.2"
+        mac_address = local.config["macs"]["crs305"]
+      }
       "jet.k8s.kalski.xyz" = {
         ip          = "10.10.10.5"
         mac_address = local.config["macs"]["kuberack_jetkvm"]
