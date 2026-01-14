@@ -30,6 +30,14 @@ locals {
       ip = "10.255.255.3"
     }
   }
+  infrastructure_dns_records = {
+    "crs305.k8s.kalski.xyz" = {
+      ip = "10.10.10.2"
+    }
+    "crs310.kalski.xyz" = {
+      ip = "10.1.1.2"
+    }
+  }
   k8s_control_plane_nodes = {
     "c1.k8s.kalski.xyz" = {
       ip          = "10.10.10.11"
@@ -115,7 +123,7 @@ locals {
 }
 
 locals {
-  dns_a_record = merge(local.stationary_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records)
+  dns_a_record = merge(local.stationary_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records, local.infrastructure_dns_records)
 }
 
 
