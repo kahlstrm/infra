@@ -31,10 +31,10 @@ locals {
     }
   }
   infrastructure_dns_records = {
-    "crs305.k8s.kalski.xyz" = {
+    "crs305.networking.kalski.xyz" = {
       ip = "10.10.10.2"
     }
-    "crs310.kalski.xyz" = {
+    "crs310.networking.kalski.xyz" = {
       ip = "10.1.1.2"
     }
   }
