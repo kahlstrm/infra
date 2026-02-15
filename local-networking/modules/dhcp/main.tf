@@ -15,7 +15,7 @@ resource "routeros_ip_dhcp_server" "dhcp_server" {
   use_reconfigure = true
   lease_time      = var.lease_time
   lifecycle {
-    ignore_changes = [disabled]
+    ignore_changes = [disabled, dynamic_lease_identifiers]
   }
 }
 
