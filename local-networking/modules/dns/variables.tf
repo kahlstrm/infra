@@ -13,7 +13,7 @@ variable "use_adlist" {
 variable "use_doh_server" {
   description = "DNS-over-HTTPS endpoint URL. Set null to disable DoH."
   type        = string
-  default     = "https://cloudflare-dns.com/dns-query"
+  default     = null
 }
 
 variable "verify_doh_cert" {
