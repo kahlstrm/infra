@@ -40,10 +40,9 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 8Gi
             limits:
-              cpu: "2"
-              memory: 2Gi
+              memory: 8Gi
           volumeMounts:
             - name: data
               mountPath: /projects
