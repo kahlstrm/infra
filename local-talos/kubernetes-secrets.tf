@@ -223,3 +223,24 @@ resource "kubernetes_secret" "harbor_admin" {
     HARBOR_ADMIN_PASSWORD = random_password.harbor_admin.result
   }
 }
+
+resource "kubernetes_namespace" "opencode" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "opencode"
+  }
+}
+
+resource "kubernetes_secret" "opencode_credentials" {
+  depends_on = [kubernetes_namespace.opencode]
+
+  metadata {
+    name      = "opencode-credentials"
+    namespace = "opencode"
+  }
+
+  data = {
+    OPENCODE_SERVER_PASSWORD = local.config["opencode"]["server_password"]
+  }
+}

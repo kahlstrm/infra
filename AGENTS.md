@@ -28,7 +28,11 @@ Format all HCL: `terraform fmt -recursive`
 
 ## Secret Management
 
-Secrets are stored in Google Secret Manager. Run `just` commands from within the target layer directory:
+Secrets flow from Google Secret Manager → Terraform → Kubernetes. **Never create Kubernetes secrets manually.**
+
+### Editing Secrets
+
+Secrets are stored as JSON blobs in Google Secret Manager. Run `just` commands from within the target layer directory:
 
 ```bash
 just help           # Show available commands
@@ -38,6 +42,45 @@ just clean --dry-run  # Preview old version cleanup
 ```
 
 First-time setup for a layer: `terraform apply -target module.secrets` before running `just edit`.
+
+### Creating Kubernetes Secrets
+
+1. **Add values to GSM** (from `local-networking/`):
+   ```bash
+   cd local-networking && just edit
+   # Add your key to the JSON, e.g.: "myapp": { "password": "xxx" }
+   ```
+
+2. **Create the Kubernetes secret** in `local-talos/kubernetes-secrets.tf`:
+   ```hcl
+   resource "kubernetes_namespace" "myapp" {
+     depends_on = [talos_cluster_kubeconfig.this]
+     metadata { name = "myapp" }
+   }
+
+   resource "kubernetes_secret" "myapp_credentials" {
+     depends_on = [kubernetes_namespace.myapp]
+     metadata {
+       name      = "myapp-credentials"
+       namespace = "myapp"
+     }
+     data = {
+       PASSWORD = local.config["myapp"]["password"]
+     }
+   }
+   ```
+
+3. **Apply Terraform**:
+   ```bash
+   cd local-talos && terraform plan && terraform apply
+   ```
+
+4. **Reference in manifests** via `secretKeyRef` or `envFrom`:
+   ```yaml
+   envFrom:
+     - secretRef:
+         name: myapp-credentials
+   ```
 
 ## Architecture
 
