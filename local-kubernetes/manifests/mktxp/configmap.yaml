@@ -78,7 +78,7 @@ data:
     bfd = False
     bgp = False
     routing_stats = False
-    certificate = False
+    certificate = True
     container = False
     kid_control_assigned = False
     kid_control_dynamic = False
