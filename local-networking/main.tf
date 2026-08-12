@@ -90,6 +90,12 @@ locals {
     transit_ipv6      = local.transit_network.stationary_ipv6
     transit_interface = local.transit_network.stationary_interface
     enable_cake       = true
+    # The ISP's first hop is added automatically from the routing table; loss there but
+    # not on the resolvers points at our access link, loss on all of them further out.
+    netwatch_targets = {
+      cloudflare-dns = "1.1.1.1"
+      google-dns     = "8.8.8.8"
+    }
   }
   kuberack = {
     transit_address   = local.transit_network.kuberack_address
@@ -101,6 +107,10 @@ locals {
     domain_name       = "kuberack.networking.kalski.xyz"
     wan_interface     = "ether8"
     enable_cake       = true
+    netwatch_targets = {
+      cloudflare-dns = "1.1.1.1"
+      google-dns     = "8.8.8.8"
+    }
   }
   kuberack_network = {
     network = "10.10.10.0/24"
@@ -145,6 +155,7 @@ module "stationary" {
     dns_a_records    = local.dns_a_record
     wan_interface    = local.stationary.wan_interface
     enable_cake      = local.stationary.enable_cake
+    netwatch_targets = local.stationary.netwatch_targets
     peers = {
       kuberack = {
         network = local.kuberack_network.network
@@ -215,6 +226,7 @@ module "kuberack" {
     dns_a_records     = local.dns_a_record
     wan_interface     = local.bootstrap_configs.kuberack.wan_interface
     enable_cake       = local.kuberack.enable_cake
+    netwatch_targets  = local.kuberack.netwatch_targets
     peers = {
       stationary = {
         network = local.stationary_lan.network

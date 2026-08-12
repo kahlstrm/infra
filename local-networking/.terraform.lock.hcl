@@ -6,6 +6,7 @@ provider "registry.terraform.io/hashicorp/google" {
   constraints = "~> 6.0"
   hashes = [
     "h1:79CwMTsp3Ud1nOl5hFS5mxQHyT0fGVye7pqpU0PPlHI=",
+    "h1:faTJQOetP9/RYuHwA3r2SWnuYoyzQNm4tUWZrZggcgY=",
     "zh:1f3513fcfcbf7ca53d667a168c5067a4dd91a4d4cccd19743e248ff31065503c",
     "zh:3da7db8fc2c51a77dd958ea8baaa05c29cd7f829bd8941c26e2ea9cb3aadc1e5",
     "zh:3e09ac3f6ca8111cbb659d38c251771829f4347ab159a12db195e211c76068bb",
@@ -26,6 +27,7 @@ provider "registry.terraform.io/hashicorp/local" {
   constraints = "~> 2.0"
   hashes = [
     "h1:DbiR/D2CPigzCGweYIyJH0N0x04oyI5xiZ9wSW/s3kQ=",
+    "h1:LMoX85QLTgCCqRuy2aXoz47P7gZ4WRPSA00fUPC/Rho=",
     "zh:10050d08f416de42a857e4b6f76809aae63ea4ec6f5c852a126a915dede814b4",
     "zh:2df2a3ebe9830d4759c59b51702e209fe053f47453cb4688f43c063bac8746b7",
     "zh:2e759568bcc38c86ca0e43701d34cf29945736fdc8e429c5b287ddc2703c7b18",
@@ -46,6 +48,7 @@ provider "registry.terraform.io/terraform-routeros/routeros" {
   constraints = "~> 1.0"
   hashes = [
     "h1:1f4dpQLF1hkOIM3ZJCYUWsxrggew8CtS51NlfOjGxUI=",
+    "h1:vvnyfePDiKcYlsqBTb0zRsPT9QgSP7DrZ9FIeCgB19c=",
     "zh:064afa29e0e7d1931ec384024a978a99972cd9b8a3588bce0bb8608593a41a4a",
     "zh:41a7cd56f5821412563617ea7f87e11fa7f8b93162a71ca2167cb7cdab9d304a",
     "zh:506cd55957d552c0353f76033834fd383e8defdaa3298dc7aa6d4f8c486a04c8",
@@ -67,6 +70,7 @@ provider "registry.terraform.io/vancluever/acme" {
   version     = "2.39.0"
   constraints = "~> 2.0"
   hashes = [
+    "h1:QrHGt8EXisD920GGpkegesompjKabkH3Hnqdt341oek=",
     "h1:yFah2MTX+1KLdZfUKheB2Tn0DNv55UulohqYWJF7nic=",
     "zh:0aa0881084f3d940848c7c637380af9b7607d571283eabfd7cefe82a7ba39051",
     "zh:4917e610a26a9faf35d9425f481ce86bd555c041895ee5f3634ce7ee389f7f0b",
@@ -89,6 +93,7 @@ provider "registry.terraform.io/zerotier/zerotier" {
   constraints = "~> 1.0"
   hashes = [
     "h1:27cASGzwYAIaZ3DeI5NQ33z7+Lu9ExkomMXO1tKgkz4=",
+    "h1:hDDj2dXRbRBd/4nz/fzivPh5/CQrhu/LxMdRtTinuVQ=",
     "zh:15d55b542ddf55b9e293094fb2f8d1e284247b409ca5e705be6ae786528ba122",
     "zh:19f2eaf5e86f19ec6df5e696e786a665524401331c58da72f77bd39e85561117",
     "zh:3e2cc5fb3a06cde67c9f065d3eb79e51e8c1f5a2583074e39435d85c88e6ef93",

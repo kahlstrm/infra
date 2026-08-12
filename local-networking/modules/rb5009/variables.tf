@@ -51,6 +51,15 @@ variable "enable_cake" {
   default     = true
 }
 
+variable "netwatch_targets" {
+  description = "ICMP probe targets for WAN loss/latency monitoring, keyed by probe name. mktxp's netwatch collector is already enabled, so these reach Prometheus without an extra exporter."
+  type        = map(string)
+  default = {
+    cloudflare-dns = "1.1.1.1"
+    google-dns     = "8.8.8.8"
+  }
+}
+
 variable "peers" {
   description = "Peer networks to route to via transit link"
   type = map(object({

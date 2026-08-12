@@ -23,4 +23,5 @@ module "rb5009" {
   wan_interface     = var.config.wan_interface
   peers             = var.config.peers
   enable_cake       = var.config.enable_cake
+  netwatch_targets  = var.config.netwatch_targets
 }

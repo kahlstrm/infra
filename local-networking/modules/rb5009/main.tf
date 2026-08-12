@@ -44,6 +44,22 @@ module "dns" {
   use_adlist = true
 }
 
+# The ISP's first hop is DHCP-assigned, so read it from the routing table rather than
+# pinning a literal that silently rots when the lease changes.
+data "routeros_ip_routes" "default" {
+  filter = {
+    dst_address = "0.0.0.0/0"
+  }
+}
+
+module "netwatch" {
+  source = "../netwatch"
+  targets = merge(
+    var.netwatch_targets,
+    try({ "isp-gateway" = data.routeros_ip_routes.default.routes[0].gateway }, {}),
+  )
+}
+
 resource "routeros_file" "bootstrap_script" {
   name     = var.bootstrap_script.filename
   contents = var.bootstrap_script.content
