@@ -121,12 +121,15 @@
 /tool mac-server mac-winbox set allowed-interface-list=MGMT_ALLOWED
 
 # --- Global Services ---
-# Enable DNS and configure DHCP clients on the WAN for dual-stack connectivity.
-/ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001
+# IPv4 resolvers only: this is the pre-Terraform config, and unreachable resolvers cost
+# real queries here (RouterOS spends attempts on them), which is enough to break the very
+# first terraform init. Terraform adds the IPv6 resolvers when enable_ipv6 is set.
+/ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4
 /ip dhcp-client add interface=$wanInterface disabled=no use-peer-dns=no comment="bootstrap"
 /ipv6 settings set accept-router-advertisements=yes forward=yes
-/ipv6 dhcp-client add interface=$wanInterface request=prefix pool-name=wan-ipv6-pool add-default-route=yes disabled=no use-peer-dns=no comment="bootstrap"
-/ipv6 address add from-pool=wan-ipv6-pool interface=$localBridgeName eui-64=yes advertise=yes comment="bootstrap"
+# The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
+# Creating them here would leave Terraform unable to manage them without a per-device
+# import, since this script only ever runs once at provisioning.
 # Trust built-in root CAs (RouterOS >=7.19) so DoH/adlist HTTPS verification works
 /certificate/settings set builtin-trust-anchors=trusted
 

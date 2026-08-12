@@ -8,6 +8,11 @@ variable "enable_ipv6" {
   type        = bool
 }
 
+variable "bridge_interface" {
+  description = "LAN bridge that receives a /64 out of the delegated prefix."
+  type        = string
+}
+
 variable "pool_name" {
   description = "IPv6 pool the delegated prefix is written into. Must match the pool the bridge address takes its prefix from."
   type        = string

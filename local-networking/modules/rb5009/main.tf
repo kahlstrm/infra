@@ -62,10 +62,11 @@ module "netwatch" {
 }
 
 module "ipv6" {
-  source        = "../ipv6"
-  wan_interface = var.wan_interface
-  enable_ipv6   = var.enable_ipv6
-  prefix_hint   = var.ipv6_prefix_hint
+  source           = "../ipv6"
+  wan_interface    = var.wan_interface
+  bridge_interface = var.bridge_interface
+  enable_ipv6      = var.enable_ipv6
+  prefix_hint      = var.ipv6_prefix_hint
 }
 
 resource "routeros_file" "bootstrap_script" {
