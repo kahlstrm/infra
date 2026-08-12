@@ -23,6 +23,8 @@ module "rb5009" {
   wan_interface     = var.config.wan_interface
   peers             = var.config.peers
   enable_cake       = var.config.enable_cake
+  enable_ipv6       = var.config.enable_ipv6
+  ipv6_prefix_hint  = var.config.ipv6_prefix_hint
   netwatch_targets  = var.config.netwatch_targets
 }
 

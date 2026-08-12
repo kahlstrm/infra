@@ -10,19 +10,23 @@ resource "routeros_ip_dns" "dns" {
   cache_size            = var.use_adlist ? 40960 : 2048
   use_doh_server        = var.use_doh_server
   verify_doh_cert       = var.verify_doh_cert
-  servers = concat(var.additional_dns_servers,
+  servers = concat(
+    var.additional_dns_servers,
     [
       # Cloudflare
       "1.1.1.1",
       "1.0.0.1",
-      "2606:4700:4700::1111",
-      "2606:4700:4700::1001",
       # Google
       "8.8.8.8",
       "8.8.4.4",
+    ],
+    var.use_ipv6_dns ? [
+      "2606:4700:4700::1111",
+      "2606:4700:4700::1001",
       "2001:4860:4860::8888",
-      "2001:4860:4860::8844"
-  ])
+      "2001:4860:4860::8844",
+    ] : []
+  )
 }
 
 

@@ -51,6 +51,12 @@ variable "enable_cake" {
   default     = true
 }
 
+variable "enable_ipv6" {
+  description = "Request an IPv6 prefix from the ISP and use IPv6 DNS resolvers. Set false while upstream IPv6 is broken."
+  type        = bool
+  default     = true
+}
+
 variable "netwatch_targets" {
   description = "ICMP probe targets for WAN loss/latency monitoring, keyed by probe name. mktxp's netwatch collector is already enabled, so these reach Prometheus without an extra exporter."
   type        = map(string)
@@ -58,6 +64,12 @@ variable "netwatch_targets" {
     cloudflare-dns = "1.1.1.1"
     google-dns     = "8.8.8.8"
   }
+}
+
+variable "ipv6_prefix_hint" {
+  description = "Prefix size to request from the ISP, e.g. \"::/56\". Null omits the hint."
+  type        = string
+  default     = null
 }
 
 variable "peers" {

@@ -27,3 +27,9 @@ variable "additional_dns_servers" {
   type        = list(string)
   default     = []
 }
+
+variable "use_ipv6_dns" {
+  description = "Include IPv6 upstream resolvers. Disable while WAN IPv6 is unavailable, as unreachable resolvers cause intermittent lookup timeouts."
+  type        = bool
+  default     = true
+}

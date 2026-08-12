@@ -90,6 +90,11 @@ locals {
     transit_ipv6      = local.transit_network.stationary_ipv6
     transit_interface = local.transit_network.stationary_interface
     enable_cake       = true
+    # DNA's CMTS advertises itself as our v6 router and delegates a /56, but never
+    # answers Neighbor Solicitations for that gateway, so IPv6 cannot leave the CPE.
+    # Keep this false until the ISP fixes it, so clients are not handed dead IPv6.
+    enable_ipv6      = false
+    ipv6_prefix_hint = "::/56"
     # The ISP's first hop is added automatically from the routing table; loss there but
     # not on the resolvers points at our access link, loss on all of them further out.
     netwatch_targets = {
@@ -107,6 +112,8 @@ locals {
     domain_name       = "kuberack.networking.kalski.xyz"
     wan_interface     = "ether8"
     enable_cake       = true
+    enable_ipv6       = false
+    ipv6_prefix_hint  = "::/56"
     netwatch_targets = {
       cloudflare-dns = "1.1.1.1"
       google-dns     = "8.8.8.8"
@@ -155,6 +162,8 @@ module "stationary" {
     dns_a_records    = local.dns_a_record
     wan_interface    = local.stationary.wan_interface
     enable_cake      = local.stationary.enable_cake
+    enable_ipv6      = local.stationary.enable_ipv6
+    ipv6_prefix_hint = local.stationary.ipv6_prefix_hint
     netwatch_targets = local.stationary.netwatch_targets
     peers = {
       kuberack = {
@@ -226,6 +235,8 @@ module "kuberack" {
     dns_a_records     = local.dns_a_record
     wan_interface     = local.bootstrap_configs.kuberack.wan_interface
     enable_cake       = local.kuberack.enable_cake
+    enable_ipv6       = local.kuberack.enable_ipv6
+    ipv6_prefix_hint  = local.kuberack.ipv6_prefix_hint
     netwatch_targets  = local.kuberack.netwatch_targets
     peers = {
       stationary = {

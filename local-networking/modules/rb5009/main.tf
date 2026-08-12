@@ -39,9 +39,10 @@ module "dhcp_lan" {
 }
 
 module "dns" {
-  source     = "../dns"
-  a_records  = var.dns_a_records
-  use_adlist = true
+  source       = "../dns"
+  a_records    = var.dns_a_records
+  use_adlist   = true
+  use_ipv6_dns = var.enable_ipv6
 }
 
 # The ISP's first hop is DHCP-assigned, so read it from the routing table rather than
@@ -58,6 +59,13 @@ module "netwatch" {
     var.netwatch_targets,
     try({ "isp-gateway" = data.routeros_ip_routes.default.routes[0].gateway }, {}),
   )
+}
+
+module "ipv6" {
+  source        = "../ipv6"
+  wan_interface = var.wan_interface
+  enable_ipv6   = var.enable_ipv6
+  prefix_hint   = var.ipv6_prefix_hint
 }
 
 resource "routeros_file" "bootstrap_script" {
