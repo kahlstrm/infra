@@ -100,6 +100,7 @@ locals {
     netwatch_targets = {
       cloudflare-dns = "1.1.1.1"
       google-dns     = "8.8.8.8"
+      poenttoe       = local.external_dns_records["poenttoe.kalski.xyz"].ip
     }
   }
   kuberack = {
@@ -117,6 +118,7 @@ locals {
     netwatch_targets = {
       cloudflare-dns = "1.1.1.1"
       google-dns     = "8.8.8.8"
+      poenttoe       = local.external_dns_records["poenttoe.kalski.xyz"].ip
     }
   }
   kuberack_network = {
