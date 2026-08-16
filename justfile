@@ -10,6 +10,10 @@ help:
     echo "  just clean             - Clean old versions (keep latest 2)"
     echo "  just clean --dry-run   - Dry run: show what would be deleted"
     echo ""
+    echo "Home Assistant:"
+    echo "  just ha-entities [re]  - List entities, optionally filtered by regex"
+    echo "  just ha-call <entity> <turn_on|turn_off>"
+    echo ""
     echo "Current secret: $SECRET_NAME"
 
 # Edit secret
@@ -117,3 +121,43 @@ clean dry_run="false":
         echo "No old versions to clean up (<= 2 versions exist)."
     fi
 
+
+# Home Assistant lives in the local-networking secret regardless of the current
+# directory. Its tokens are unscoped: the one that reads a sensor can also cut power,
+# so treat it like a router password. curl reads the header from --config rather than
+# argv so the token never appears in the process list.
+# List Home Assistant entities, optionally filtered by regex (e.g. just ha-entities switch)
+[no-cd]
+ha-entities filter="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SECRET=$(gcloud secrets versions access latest --secret=local-networking)
+    HA_URL=$(jq -er '.home_assistant.url' <<<"$SECRET") || {
+        echo "No home_assistant in the local-networking secret. Add it with: cd local-networking && just edit" >&2
+        exit 1
+    }
+    TOKEN=$(jq -er '.home_assistant.token' <<<"$SECRET")
+    curl -sSf --config <(printf 'header = "Authorization: Bearer %s"\n' "$TOKEN") \
+        "$HA_URL/api/states" \
+        | jq -r --arg re '{{filter}}' '.[] | select(.entity_id | test($re)) | "\(.entity_id)\t\(.state)"' \
+        | sort
+
+# Call a Home Assistant service on an entity, e.g. just ha-call switch.kuberack turn_on
+[no-cd]
+ha-call entity action:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{action}}" in
+        turn_on|turn_off|toggle) ;;
+        *) echo "action must be turn_on, turn_off or toggle" >&2; exit 1 ;;
+    esac
+    ENTITY='{{entity}}'
+    DOMAIN="${ENTITY%%.*}"
+    SECRET=$(gcloud secrets versions access latest --secret=local-networking)
+    HA_URL=$(jq -er '.home_assistant.url' <<<"$SECRET")
+    TOKEN=$(jq -er '.home_assistant.token' <<<"$SECRET")
+    curl -sSf --config <(printf 'header = "Authorization: Bearer %s"\n' "$TOKEN") \
+        -H "Content-Type: application/json" \
+        -d "$(jq -nc --arg e '{{entity}}' '{entity_id: $e}')" \
+        "$HA_URL/api/services/$DOMAIN/{{action}}" \
+        | jq -r '.[]? | "\(.entity_id)\t\(.state)"'
