@@ -14,6 +14,14 @@ spec:
         values: |
           crds:
             enabled: true
+          # certmanager_certificate_expiration_timestamp_seconds is the only warning before
+          # an ingress cert lapses. The release label is what observability's Prometheus
+          # selects ServiceMonitors on.
+          prometheus:
+            servicemonitor:
+              enabled: true
+              labels:
+                release: observability
 
     - repoURL: https://github.com/kahlstrm/infra.git
       targetRevision: main
