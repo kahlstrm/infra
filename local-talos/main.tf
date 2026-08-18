@@ -47,17 +47,19 @@ resource "talos_machine_secrets" "salaisuudet" {
 }
 
 data "talos_machine_configuration" "controlplane" {
-  cluster_name     = local.cluster_name
-  cluster_endpoint = local.cluster_endpoint
-  machine_type     = "controlplane"
-  machine_secrets  = talos_machine_secrets.salaisuudet.machine_secrets
+  cluster_name       = local.cluster_name
+  kubernetes_version = "1.33.0"
+  cluster_endpoint   = local.cluster_endpoint
+  machine_type       = "controlplane"
+  machine_secrets    = talos_machine_secrets.salaisuudet.machine_secrets
 }
 
 data "talos_machine_configuration" "worker" {
-  cluster_name     = local.cluster_name
-  cluster_endpoint = local.cluster_endpoint
-  machine_type     = "worker"
-  machine_secrets  = talos_machine_secrets.salaisuudet.machine_secrets
+  cluster_name       = local.cluster_name
+  kubernetes_version = "1.34.1"
+  cluster_endpoint   = local.cluster_endpoint
+  machine_type       = "worker"
+  machine_secrets    = talos_machine_secrets.salaisuudet.machine_secrets
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
