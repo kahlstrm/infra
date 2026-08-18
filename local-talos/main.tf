@@ -46,6 +46,13 @@ resource "talos_machine_secrets" "salaisuudet" {
   talos_version = "1.10"
 }
 
+data "talos_client_configuration" "this" {
+  cluster_name         = local.cluster_name
+  client_configuration = talos_machine_secrets.salaisuudet.client_configuration
+  endpoints            = [for hostname, node in local.control_plane_node_config : hostname]
+  nodes                = concat(keys(local.control_plane_node_config), keys(local.worker_node_config))
+}
+
 data "talos_machine_configuration" "controlplane" {
   cluster_name       = local.cluster_name
   kubernetes_version = "1.34.1"
