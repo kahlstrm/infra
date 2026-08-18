@@ -55,6 +55,7 @@ data "talos_client_configuration" "this" {
 
 data "talos_machine_configuration" "controlplane" {
   cluster_name       = local.cluster_name
+  talos_version      = "v1.11.5"
   kubernetes_version = "1.34.1"
   cluster_endpoint   = local.cluster_endpoint
   machine_type       = "controlplane"
@@ -63,6 +64,7 @@ data "talos_machine_configuration" "controlplane" {
 
 data "talos_machine_configuration" "worker" {
   cluster_name       = local.cluster_name
+  talos_version      = "v1.11.5"
   kubernetes_version = "1.34.1"
   cluster_endpoint   = local.cluster_endpoint
   machine_type       = "worker"
