@@ -10,6 +10,7 @@ locals {
   # Node that does the talos cluster bootstrap
   bootstrap_node = "c1.k8s.kalski.xyz"
 
+  # install_image is applied out of band by `talosctl upgrade`; drift never shows in a plan.
   control_plane_node_config = {
     "c1.k8s.kalski.xyz" = {
       install_disk  = "/dev/nvme0n1"
@@ -57,12 +58,6 @@ data "talos_machine_configuration" "worker" {
   cluster_endpoint = local.cluster_endpoint
   machine_type     = "worker"
   machine_secrets  = talos_machine_secrets.salaisuudet.machine_secrets
-}
-
-data "talos_client_configuration" "this" {
-  cluster_name         = local.cluster_name
-  client_configuration = talos_machine_secrets.salaisuudet.client_configuration
-  endpoints            = [for hostname, node in local.control_plane_node_config : hostname]
 }
 
 resource "talos_machine_configuration_apply" "controlplane" {
