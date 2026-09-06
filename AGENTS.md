@@ -26,6 +26,42 @@ Target specific modules: `terraform apply -target=module.stationary` or `terrafo
 
 Format all HCL: `terraform fmt -recursive`
 
+## CHR Lab and Scenarios
+
+Use the generic RouterOS lab in `experiments/chr/` for isolated experiments.
+Run from the repository root on Linux with access to `/dev/kvm`:
+
+```bash
+nix develop .#chr
+just chr start                          # Start or reuse RouterOS 7.21.3
+just chr ssh                            # Open the lab router console
+just chr scenarios                      # List available experiments
+just chr stop                           # Retain disk and evidence
+```
+
+`just chr fresh` archives the existing lab disk and boots a clean image.
+Use `--version` before the command to select another version, e.g.
+`just chr --version 7.23.5 start`. Stop the current VM before reusing its SSH port.
+State and credentials live outside Git under `$XDG_STATE_HOME/chr` (default
+`~/.local/state/chr`). SSH and scenario port forwards bind only to localhost.
+
+Keep experiment-specific settings, dependencies, probes, and results in
+`experiments/chr/scenarios/<name>/`; the base bootstrap handles VM access only.
+Scenarios may change the lab configuration; use `fresh` between unrelated tests.
+
+The standalone Vert.x/Netty DNS reproduction is a separate scenario:
+
+```bash
+nix develop .#chr-netty
+just chr start
+just chr run netty-dns
+```
+
+Perform cache-flush and cache-seeding experiments in the lab. See the
+[lab README](experiments/chr/README.md) for lifecycle and scenario development,
+and the [Netty DNS README](experiments/chr/scenarios/netty_dns/README.md) for
+observed results and limitations.
+
 ## Secret Management
 
 Secrets flow from Google Secret Manager → Terraform → Kubernetes. **Never create Kubernetes secrets manually.**
