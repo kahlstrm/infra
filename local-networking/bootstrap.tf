@@ -2,6 +2,7 @@ locals {
   bootstrap_configs = {
     "stationary" = {
       system_identity              = "stationary"
+      transit_ipv4_address         = local.stationary.transit_address
       local_bridge_name            = "local-bridge"
       local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "sfp-sfpplus1"]
       maintenance_port             = "ether7"
@@ -16,6 +17,8 @@ locals {
       management_routes = [
         {
           comment          = "route to kuberack for management"
+          ipv4_destination = local.kuberack_network.network
+          ipv4_gateway     = split("/", local.kuberack.transit_address)[0]
           ipv6_destination = format("%s/64", local.kuberack.ipv6)
           ipv6_gateway     = local.kuberack.transit_ipv6
           distance         = 255
@@ -24,6 +27,7 @@ locals {
     },
     "kuberack" = {
       system_identity              = "kuberack"
+      transit_ipv4_address         = local.kuberack.transit_address
       local_bridge_name            = "kuberack-bridge"
       local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "ether7", "sfp-sfpplus1"]
       maintenance_port             = ""
@@ -38,6 +42,8 @@ locals {
       management_routes = [
         {
           comment          = "route to stationary for management"
+          ipv4_destination = local.stationary_lan.network
+          ipv4_gateway     = split("/", local.stationary.transit_address)[0]
           ipv6_destination = format("%s/64", local.stationary.ipv6)
           ipv6_gateway     = local.stationary.transit_ipv6
           distance         = 255
@@ -57,30 +63,4 @@ module "bootstrap_script" {
   )
   filename      = "${each.key}.rsc"
   template_path = "${path.root}/bootstrap/bootstrap.tftpl.rsc"
-}
-
-data "routeros_files" "stationary" {
-  provider = routeros.stationary
-  filter = {
-    name = module.bootstrap_script.stationary.filename
-  }
-}
-
-import {
-  for_each = data.routeros_files.stationary.files
-  to       = module.stationary.module.rb5009.routeros_file.bootstrap_script
-  id       = each.value.id
-}
-
-data "routeros_files" "kuberack" {
-  provider = routeros.kuberack
-  filter = {
-    name = module.bootstrap_script.kuberack.filename
-  }
-}
-
-import {
-  for_each = data.routeros_files.kuberack.files
-  to       = module.kuberack.module.rb5009.routeros_file.bootstrap_script
-  id       = each.value.id
 }

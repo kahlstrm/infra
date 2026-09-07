@@ -26,6 +26,46 @@ Target specific modules: `terraform apply -target=module.stationary` or `terrafo
 
 Format all HCL: `terraform fmt -recursive`
 
+## CHR Lab and Scenarios
+
+Use the generic RouterOS lab in `experiments/chr/` for isolated experiments.
+Run from the repository root on Linux with access to `/dev/kvm`:
+
+```bash
+nix develop .#chr
+just chr start                          # Start or reuse RouterOS 7.21.3
+just chr ssh                            # Open the lab router console
+just chr scenarios                      # List available experiments
+just chr stop                           # Retain disk and evidence
+```
+
+`just chr fresh` archives the existing lab disk and boots a clean image.
+Use `--version` before the command to select another version, e.g.
+`just chr --version 7.23.5 start`. Stop the current VM before reusing its SSH port.
+State and credentials live outside Git under `$XDG_STATE_HOME/chr` (default
+`~/.local/state/chr`). SSH and scenario port forwards bind only to localhost.
+
+Keep experiment-specific settings, dependencies, probes, and results in
+`experiments/chr/scenarios/<name>/`; the base bootstrap handles VM access only.
+Scenarios may change the lab configuration; use `fresh` between unrelated tests.
+
+For bootstrap changes, regenerate and review `local-networking/bootstrap/generated/`
+and run `nix develop .#chr-bootstrap` followed by `just chr run bootstrap`.
+This E2E scenario resets two disposable CHRs and checks IPv4 management, DNS,
+transit routing, and Terraform adoption; see its
+[README](experiments/chr/scenarios/bootstrap/README.md) for coverage and limitations.
+
+After bootstrapping or resetting a router, preview its Terraform adoption with
+`just adopt-bootstrap --router stationary` (or `kuberack`). Add `--apply` to
+reconcile state, then review a normal networking-layer plan. Run
+`terraform -chdir=local-networking init` first. The command uses existing provider
+credentials and the shared bootstrap configuration; it does not configure routers.
+It preserves correct bindings, replaces stale IDs, and rejects missing required or
+ambiguous objects. A missing optional bootstrap file is left for Terraform to create.
+State backups are private under `$XDG_STATE_HOME/infra-bootstrap-adopt/`.
+Do not run concurrent Terraform writes: each state operation locks individually,
+but the entire sequence is not atomic. If an import fails, fix the error and rerun.
+
 ## Secret Management
 
 Secrets flow from Google Secret Manager → Terraform → Kubernetes. **Never create Kubernetes secrets manually.**

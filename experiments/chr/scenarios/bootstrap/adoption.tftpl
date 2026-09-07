@@ -1,0 +1,62 @@
+terraform {
+  required_providers {
+    routeros = {
+      source  = "terraform-routeros/routeros"
+      version = "= PROVIDER_VERSION"
+    }
+  }
+}
+variable "password" {
+  type      = string
+  sensitive = true
+}
+provider "routeros" {
+  alias    = "SITE"
+  hosturl  = "https://127.0.0.1:HTTPS_PORT"
+  username = "admin"
+  password = var.password
+  insecure = true
+}
+locals {
+  sites = {
+    stationary = { ip = "10.1.1.1", ipv6 = "fd00:de:ad:1::1", transit = "10.254.254.2/30", bridge = "local-bridge" }
+    kuberack   = { ip = "10.10.10.1", ipv6 = "fd00:de:ad:10::1", transit = "10.254.254.1/30", bridge = "kuberack-bridge" }
+  }
+  records = { for name, site in local.sites : "${name}.networking.kalski.xyz" => { ip = site.ip, ipv6 = site.ipv6 } }
+  configs = { for name, site in local.sites : name => {
+    local_ipv4_address     = "${site.ip}/24"
+    local_bridge_name      = site.bridge
+    transit_ipv4_address   = site.transit
+    transit_interface      = "ether1"
+    all_router_dns_records = local.records
+  } }
+  bootstrap_adoption = {
+    bindings = module.bootstrap_adoption.bindings
+    routers  = { SITE = { url = "https://127.0.0.1:HTTPS_PORT", username = "admin", password = var.password, insecure = true } }
+  }
+  dhcp = { server_name = "lab", network_address = cidrsubnet("${local.sites.SITE.ip}/24", 0, 0), pool_ranges = ["POOL_RANGE"] }
+}
+module "bootstrap_adoption" {
+  source  = "MODULES/bootstrap-adoption"
+  configs = local.configs
+}
+module "SITE" {
+  source    = "MODULES/SITE"
+  providers = { routeros.SITE = routeros.SITE }
+  config = {
+    bootstrap_script  = { filename = "SITE.rsc", content = file("BOOTSTRAP_FILE") }
+    device_config     = { ip = local.sites.SITE.ip, ipv6 = local.sites.SITE.ipv6, transit_address = local.sites.SITE.transit, transit_interface = "ether1" }
+    bridge_interface  = local.sites.SITE.bridge
+    dhcp_config       = local.dhcp
+    lan_dhcp_config   = local.dhcp
+    static_leases     = {}
+    lan_static_leases = {}
+    dns_a_records     = local.records
+    wan_interface     = "ether8"
+    enable_cake       = false
+    enable_ipv6       = false
+    ipv6_prefix_hint  = "::/56"
+    netwatch_targets  = {}
+    peers             = { for name, site in local.sites : name => { network = cidrsubnet("${site.ip}/24", 0, 0), gateway = split("/", site.transit)[0] } if name != "SITE" }
+  }
+}

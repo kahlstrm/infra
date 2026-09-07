@@ -14,7 +14,18 @@ help:
     echo "  just ha-entities [re]  - List entities, optionally filtered by regex"
     echo "  just ha-call <entity> <turn_on|turn_off>"
     echo ""
+    echo "CHR lab:"
+    echo "  just chr start         - Start an isolated RouterOS 7.21.3 VM"
+    echo "  just chr scenarios     - List available experiments"
+    echo "  just chr run bootstrap - Test bootstrap adoption and reset recovery"
+    echo "  just chr stop          - Stop the VM, retaining its disk and results"
+    echo ""
     echo "Current secret: $SECRET_NAME"
+
+# Persistent CHR lab; e.g. just chr --version 7.23.5 start
+[positional-arguments]
+chr +args:
+    python3 experiments/chr/lab.py "$@"
 
 # Edit secret
 [no-cd]
@@ -161,3 +172,8 @@ ha-call entity action:
         -d "$(jq -nc --arg e '{{entity}}' '{entity_id: $e}')" \
         "$HA_URL/api/services/$DOMAIN/{{action}}" \
         | jq -r '.[]? | "\(.entity_id)\t\(.state)"'
+
+# Preview bootstrap state adoption; add --apply to reconcile bindings
+[positional-arguments]
+adopt-bootstrap +args:
+    python3 local-networking/scripts/adopt-bootstrap.py "$@"
