@@ -2,6 +2,7 @@ locals {
   bootstrap_configs = {
     "stationary" = {
       system_identity              = "stationary"
+      enable_ipv6                  = local.stationary.enable_ipv6
       transit_ipv4_address         = local.stationary.transit_address
       local_bridge_name            = "local-bridge"
       local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "sfp-sfpplus1"]
@@ -28,6 +29,7 @@ locals {
     },
     "kuberack" = {
       system_identity              = "kuberack"
+      enable_ipv6                  = local.kuberack.enable_ipv6
       transit_ipv4_address         = local.kuberack.transit_address
       local_bridge_name            = "kuberack-bridge"
       local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "ether7", "sfp-sfpplus1"]

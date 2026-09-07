@@ -90,7 +90,8 @@
   /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
   /ipv6 nd prefix default set autonomous=yes;
   /ipv6 nd disable [find default]
-  /ipv6 nd add interface=$localBridgeName advertise-dns=yes dns=$localIpv6Host managed-address-configuration=no other-configuration=no
+  # Terraform adopts this entry; keep advertisements off when IPv6 is disabled.
+  /ipv6 nd add interface=$localBridgeName advertise-dns=${enable_ipv6 ? "yes" : "no"} dns="${enable_ipv6 ? split("/", local_ipv6_address)[0] : ""}" managed-address-configuration=no other-configuration=no disabled=${enable_ipv6 ? "no" : "yes"} ra-lifetime=${enable_ipv6 ? "30m" : "none"}
 
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
 
@@ -102,7 +103,7 @@
 # Add records for all managed routers to solve provider DNS resolution.
 %{ for name, ips in all_router_dns_records ~}
 /ip dns static add name="${name}" address=${ips.ip} type=A
-/ip dns static add name="${name}" address=${ips.ipv6} type=AAAA comment="bootstrap"
+/ip dns static add name="${name}" address=${ips.ipv6} type=AAAA disabled=${ips.enable_ipv6 ? "no" : "yes"} comment="bootstrap"
 %{ endfor ~}
 
 # --- Transit Link Setup ---
@@ -139,7 +140,7 @@
 # first terraform init. Terraform adds the IPv6 resolvers when enable_ipv6 is set.
 /ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4
 /ip dhcp-client add interface=$wanInterface disabled=no use-peer-dns=no comment="bootstrap"
-/ipv6 settings set accept-router-advertisements=yes forward=yes
+/ipv6 settings set disable-ipv6=${enable_ipv6 ? "no" : "yes"} accept-router-advertisements=${enable_ipv6 ? "yes" : "no"} forward=${enable_ipv6 ? "yes" : "no"}
 # The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
 # Creating them here would leave Terraform unable to manage them without a per-device
 # import, since this script only ever runs once at provisioning.

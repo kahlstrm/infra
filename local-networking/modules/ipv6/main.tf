@@ -6,12 +6,6 @@ terraform {
   }
 }
 
-# WAN prefix delegation, and the switch that turns IPv6 off for LAN clients.
-#
-# Disabling the client drops the delegated prefix, so the from-pool address on the
-# bridge loses its global addresses and clients stop being handed routable IPv6.
-# The ULA fd00:de:ad::/48 addressing, its AAAA records and the inter-site transit
-# routing are unaffected, because those do not come from this pool.
 resource "routeros_ipv6_dhcp_client" "wan_pd" {
   interface          = var.wan_interface
   request            = ["prefix"]
@@ -33,6 +27,7 @@ resource "routeros_ipv6_address" "lan_from_pool" {
   from_pool = var.pool_name
   interface = var.bridge_interface
   eui_64    = true
-  advertise = true
+  advertise = var.enable_ipv6
+  disabled  = !var.enable_ipv6
   comment   = "terraform: lan prefix from wan delegation"
 }

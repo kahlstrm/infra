@@ -215,6 +215,17 @@ class BootstrapLab(Lab):
 
     def verify(self):
         peer = "10.10.10.1" if self.listen else "10.1.1.1"
+        self.check(":put [/ipv6 settings get disable-ipv6]", "true", "IPv6 disabled")
+        self.check(
+            ":put [:len [/ipv6 nd find where disabled=no]]",
+            "0",
+            "no router advertisements",
+        )
+        self.check(
+            ":put [:len [/ip dns static find where type=AAAA and disabled=no]]",
+            "0",
+            "no enabled router AAAA records",
+        )
         for name, address in [("stationary", "10.1.1.1"), ("kuberack", "10.10.10.1")]:
             self.check(
                 f':put [:resolve "{name}.networking.kalski.xyz" type=ipv4]',
