@@ -1,7 +1,6 @@
 """Reset two disposable routers using the checked-in production bootstrap scripts."""
 
 import os
-import re
 import shutil
 import socket
 import subprocess
@@ -183,116 +182,6 @@ class BootstrapLab(Lab):
             )
         print(f"{self.name}: PASS {label}", flush=True)
 
-    def adopt(self, recovery=False):
-        directory = self.directory / "terraform"
-        directory.mkdir(exist_ok=True)
-        source = Path(__file__).with_name("adoption.tftpl").read_text()
-        values = {
-            "PROVIDER_VERSION": re.search(
-                r'provider "registry.terraform.io/terraform-routeros/routeros" \{\s+version\s+= "([^"]+)"',
-                (REPO / "local-networking/.terraform.lock.hcl").read_text(),
-            )[1],
-            "HTTPS_PORT": str(self.https_port),
-            "SITE": self.name,
-            "MODULES": os.path.relpath(REPO / "local-networking/modules", directory),
-            "BOOTSTRAP_FILE": str(
-                REPO / "local-networking/bootstrap/generated" / f"{self.name}.rsc"
-            ),
-            "POOL_RANGE": f"{self.prefix}.100-{self.prefix}.199",
-        }
-        for key, value in values.items():
-            source = source.replace(key, value)
-        (directory / "main.tf").write_text(source)
-        shutil.copyfile(
-            REPO / "local-networking/.terraform.lock.hcl",
-            directory / ".terraform.lock.hcl",
-        )
-        env = dict(
-            os.environ,
-            TF_VAR_password=(self.directory / "password").read_text(),
-            TF_IN_AUTOMATION="1",
-        )
-
-        def terraform(label, *args):
-            result = subprocess.run(
-                [shutil.which("tofu") or "terraform", args[0], "-no-color", *args[1:]],
-                cwd=directory,
-                env=env,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            (directory / f"{label}.log").write_text(result.stdout + result.stderr)
-            if result.returncode:
-                raise RuntimeError(
-                    f"{self.name}: Terraform {label} failed; see {directory / (label + '.log')}"
-                )
-            return result.stdout
-
-        terraform("init", "init", "-backend=false")
-        importer = REPO / "local-networking/scripts/adopt-bootstrap.py"
-        command = [
-            "python3",
-            str(importer),
-            "--terraform",
-            shutil.which("tofu") or "terraform",
-            "--directory",
-            str(directory),
-            "--router",
-            self.name,
-        ]
-        for label, flags in [
-            ("preview", []),
-            ("adopt", ["--apply"]),
-            ("repeat", ["--apply"]),
-        ]:
-            result = subprocess.run(
-                command + flags, env=env, capture_output=True, text=True, check=False
-            )
-            (directory / f"{label}.log").write_text(result.stdout + result.stderr)
-            if result.returncode:
-                raise RuntimeError(
-                    f"{self.name}: importer {label} failed; see {directory / (label + '.log')}"
-                )
-            if recovery and label == "adopt" and "rebind " not in result.stdout:
-                raise RuntimeError(
-                    f"{self.name}: reset did not exercise stale binding repair"
-                )
-            if label == "repeat" and "No state changes needed." not in result.stdout:
-                raise RuntimeError(f"{self.name}: repeat adoption was not a no-op")
-        # Exercise the actual production resources adopted by this command.
-        # Other site services remain outside this bootstrap-focused scenario.
-        result = subprocess.run(
-            [shutil.which("tofu") or "terraform", "console", "-no-color"],
-            cwd=directory,
-            env=env,
-            input='jsonencode([for b in module.bootstrap_adoption.bindings : b.address if b.router == "'
-            + self.name
-            + '"])\n',
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        addresses = run(
-            "jq", "-r", "fromjson | .[]", input=result.stdout, capture_output=True
-        ).stdout.splitlines()
-        targets = [f"-target={address}" for address in addresses]
-        terraform("plan", "plan", *targets, "-out=adopt.tfplan")
-        plan = terraform("show", "show", "-json", "adopt.tfplan")
-        run(
-            "jq",
-            "-e",
-            'all(.resource_changes[]; (.change.actions | index("delete") | not) and (.type == "routeros_file" or (.change.actions | index("create") | not)))',
-            input=plan,
-            capture_output=True,
-        )
-        terraform("apply", "apply", "adopt.tfplan")
-        terraform("settled", "plan", *targets, "-detailed-exitcode")
-        print(
-            f"{self.name}: PASS adoption, repeat no-op and empty targeted plan",
-            flush=True,
-        )
-
     def verify(self):
         peer = "10.10.10.1" if self.listen else "10.1.1.1"
         for name, address in [("stationary", "10.1.1.1"), ("kuberack", "10.10.10.1")]:
@@ -345,6 +234,128 @@ class BootstrapLab(Lab):
         (self.directory / "export.rsc").write_text(self.ssh("/export terse"))
 
 
+class Adoption:
+    def __init__(self, root, routers):
+        self.directory = root / "terraform"
+        self.directory.mkdir()
+        self.binary = shutil.which("tofu") or "terraform"
+        self.env = dict(os.environ, TF_IN_AUTOMATION="1")
+        for router in routers:
+            self.env[f"TF_VAR_{router.name}_hosturl"] = (
+                f"https://127.0.0.1:{router.https_port}"
+            )
+            self.env[f"TF_VAR_{router.name}_password"] = (
+                router.directory / "password"
+            ).read_text()
+        shutil.copyfile(
+            Path(__file__).parent / "terraform/main.tf", self.directory / "main.tf"
+        )
+        source = REPO / "local-networking"
+        for name in (
+            "bootstrap.tf",
+            "bootstrap-config.tf",
+            "network-topology.tf",
+            "bootstrap-moves.tf.json",
+            "modules",
+        ):
+            (self.directory / name).symlink_to(
+                source / name, target_is_directory=name == "modules"
+            )
+        shutil.copyfile(
+            source / ".terraform.lock.hcl", self.directory / ".terraform.lock.hcl"
+        )
+        self.call("init", "init", "-backend=false")
+
+    def call(self, label, *args):
+        command = [self.binary, *args]
+        command.insert(3 if args[0] == "state" else 2, "-no-color")
+        result = subprocess.run(
+            command,
+            cwd=self.directory,
+            env=self.env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        (self.directory / f"{label}.log").write_text(result.stdout + result.stderr)
+        if result.returncode:
+            raise RuntimeError(
+                f"Terraform {label} failed; see {self.directory / (label + '.log')}"
+            )
+        return result.stdout
+
+    def adopt(self, recovery=False, migration=False):
+        command = [
+            "python3",
+            str(REPO / "local-networking/scripts/adopt-bootstrap.py"),
+            "--terraform",
+            self.binary,
+            "--directory",
+            str(self.directory),
+            "--router",
+            "stationary",
+            "--router",
+            "kuberack",
+        ]
+        for label, flags in [
+            ("preview", []),
+            ("adopt", ["--apply"]),
+            ("repeat", ["--apply"]),
+        ]:
+            result = subprocess.run(
+                command + flags,
+                env=self.env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            (self.directory / f"{label}.log").write_text(result.stdout + result.stderr)
+            if result.returncode:
+                raise RuntimeError(
+                    f"Importer {label} failed; see {self.directory / (label + '.log')}"
+                )
+            if recovery and label == "adopt" and "rebind " not in result.stdout:
+                raise RuntimeError("Reset did not exercise stale binding repair")
+            if migration and label == "adopt" and "move   " not in result.stdout:
+                raise RuntimeError("Legacy state did not exercise address migration")
+            if label == "repeat" and "No state changes needed." not in result.stdout:
+                raise RuntimeError("Repeat adoption was not a no-op")
+        self.call("plan", "plan", "-out=adopt.tfplan")
+        plan = self.call("show", "show", "-json", "adopt.tfplan")
+        run(
+            "jq",
+            "-e",
+            'all(.resource_changes[]; (.change.actions | index("delete") | not) and (.type == "routeros_file" or .type == "local_file" or (.change.actions | index("create") | not)))',
+            input=plan,
+            capture_output=True,
+        )
+        self.call("apply", "apply", "adopt.tfplan")
+        self.call("settled", "plan", "-detailed-exitcode")
+        for site in ("stationary", "kuberack"):
+            generated = self.directory / "bootstrap/generated" / f"{site}.rsc"
+            production = REPO / "local-networking/bootstrap/generated" / f"{site}.rsc"
+            if generated.read_bytes() != production.read_bytes():
+                raise RuntimeError(
+                    f"{site}: generated script differs from the checked-in production script"
+                )
+        print(
+            "PASS adoption, repeat no-op and empty full bootstrap-module plan",
+            flush=True,
+        )
+
+    def use_legacy_addresses(self):
+        migrations = run(
+            "jq",
+            "-r",
+            ".moved[] | [.to, .from] | @tsv",
+            str(self.directory / "bootstrap-moves.tf.json"),
+            capture_output=True,
+        ).stdout.splitlines()
+        for index, line in enumerate(migrations):
+            new, old = line.split("\t")
+            self.call(f"legacy-{index}", "state", "mv", new, old)
+
+
 def experiment(parent):
     required = (
         "qemu-system-x86_64",
@@ -378,16 +389,18 @@ def experiment(parent):
             list(executor.map(lambda router: router.reset_bootstrap(), routers))
         for router in routers:
             router.verify()
-            router.adopt()
-            router.verify()
+        adoption = Adoption(root, routers)
+        adoption.adopt()
+        adoption.use_legacy_addresses()
+        adoption.adopt(migration=True)
         with ThreadPoolExecutor(max_workers=2) as executor:
             list(executor.map(lambda router: router.reset_bootstrap(), routers))
         for router in routers:
-            # Reset can reuse IDs. Recreate DNS entries to guarantee stale bindings.
             router.ssh(
                 ":foreach id in=[/ip dns static find] do={:local n [/ip dns static get $id name]; :local t [/ip dns static get $id type]; :local a [/ip dns static get $id address]; :local d [/ip dns static get $id disabled]; /ip dns static remove $id; /ip dns static add name=$n type=$t address=$a disabled=$d}"
             )
-            router.adopt(recovery=True)
+        adoption.adopt(recovery=True)
+        for router in routers:
             router.verify()
         print(
             "PASS: bootstrap adoption and recovery with retained state after reset",

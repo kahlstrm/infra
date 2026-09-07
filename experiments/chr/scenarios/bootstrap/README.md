@@ -29,12 +29,20 @@ The test checks:
 - Each router can reach the other router's LAN address with its own LAN address
   as the source, exercising the transit link and return routes.
 - The production adoption command imports the management addresses, peer route,
-  A records into the real site modules.
-  A repeated adoption changes nothing. A targeted apply of these resources and
-  the optional bootstrap file leaves an empty subsequent targeted plan.
+  A records into the real bootstrap modules. A repeated adoption changes nothing.
+  A full bootstrap-module apply leaves an empty subsequent plan.
+- State addresses are moved back to their legacy names, then the production
+  migration declarations restore them without recreating router objects.
 - Both routers are reset again while Terraform state is retained. DNS entries
   are recreated to guarantee changed IDs, and adoption repairs the stale bindings.
   DNS and routed IPv4 management are checked again.
+
+The lab's normal `terraform/main.tf` only configures providers and disposable
+credentials. The harness links the production `bootstrap.tf`, `bootstrap-config.tf`,
+`network-topology.tf`, migration declarations, and module directory into its private
+Terraform root. There is no copied resource configuration or HCL template substitution.
+The module renders its scripts there, and the test compares them byte-for-byte with
+the checked-in production scripts.
 
 The adoption fixture covers bootstrap handoff, not the entire networking layer
 (GCP secrets, ACME, ZeroTier, DHCP leases, CAKE, and monitoring). IPv6 shutdown assertions are added by the dependent IPv6 change.

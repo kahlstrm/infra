@@ -62,6 +62,13 @@ reconcile state, then review a normal networking-layer plan. Run
 credentials and the shared bootstrap configuration; it does not configure routers.
 It preserves correct bindings, replaces stale IDs, and rejects missing required or
 ambiguous objects. A missing optional bootstrap file is left for Terraform to create.
+The bootstrap module owns the script template, management addresses, peer routes,
+router DNS records, and uploaded script. Bridge/firewall/certificate commissioning
+stays in its template; later DNS service settings and WAN prefix delegation stay
+in their service modules. `bootstrap-config.tf` and
+`network-topology.tf` supply site settings; the lab uses these same files.
+Keep resource renames in native `moved` declarations in `bootstrap-moves.tf.json`;
+the importer reads that same file to migrate old addresses before adopting IDs.
 State backups are private under `$XDG_STATE_HOME/infra-bootstrap-adopt/`.
 Do not run concurrent Terraform writes: each state operation locks individually,
 but the entire sequence is not atomic. If an import fails, fix the error and rerun.
@@ -141,7 +148,8 @@ local-kubernetes/
 - `modules/rb5009/` - Shared RB5009 router configuration
 - `modules/dhcp/`, `modules/dns/`, `modules/cert/` - Network services
 - `modules/zerotier/` - VPN site-to-site connectivity
-- `bootstrap/` - RouterOS bootstrap templates; `bootstrap/generated/` - generated `.rsc` scripts
+- `modules/bootstrap/` - Bootstrap script, Terraform resources, and adoption metadata
+- `bootstrap/generated/` - Generated `.rsc` commissioning scripts
 
 **local-talos:** Bootstraps Talos cluster using Siderolabs provider. Consumes networking outputs for node IPs/hostnames.
 

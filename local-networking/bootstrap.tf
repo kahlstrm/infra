@@ -1,66 +1,39 @@
-locals {
-  bootstrap_configs = {
-    "stationary" = {
-      system_identity              = "stationary"
-      transit_ipv4_address         = local.stationary.transit_address
-      local_bridge_name            = "local-bridge"
-      local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "sfp-sfpplus1"]
-      maintenance_port             = "ether7"
-      local_ipv4_address           = format("%s/24", local.stationary.ip)
-      local_ipv6_address           = format("%s/64", local.stationary.ipv6)
-      all_router_dns_records       = local.all_router_dns_records
-      transit_interface            = local.stationary.transit_interface
-      transit_ipv6_address_network = "${local.stationary.transit_ipv6}/64"
-      wan_interface                = local.stationary.wan_interface
-      cake_enabled                 = local.stationary.enable_cake
-      install_zerotier             = true
-      management_routes = [
-        {
-          comment          = "route to kuberack for management"
-          ipv4_destination = local.kuberack_network.network
-          ipv4_gateway     = split("/", local.kuberack.transit_address)[0]
-          ipv6_destination = format("%s/64", local.kuberack.ipv6)
-          ipv6_gateway     = local.kuberack.transit_ipv6
-          distance         = 255
-        }
-      ]
-    },
-    "kuberack" = {
-      system_identity              = "kuberack"
-      transit_ipv4_address         = local.kuberack.transit_address
-      local_bridge_name            = "kuberack-bridge"
-      local_bridge_ports           = ["ether2", "ether3", "ether4", "ether5", "ether6", "ether7", "sfp-sfpplus1"]
-      maintenance_port             = ""
-      local_ipv4_address           = format("%s/24", local.kuberack.ip)
-      local_ipv6_address           = format("%s/64", local.kuberack.ipv6)
-      all_router_dns_records       = local.all_router_dns_records
-      transit_interface            = local.kuberack.transit_interface
-      transit_ipv6_address_network = "${local.kuberack.transit_ipv6}/64"
-      wan_interface                = local.kuberack.wan_interface
-      cake_enabled                 = local.kuberack.enable_cake
-      install_zerotier             = true
-      management_routes = [
-        {
-          comment          = "route to stationary for management"
-          ipv4_destination = local.stationary_lan.network
-          ipv4_gateway     = split("/", local.stationary.transit_address)[0]
-          ipv6_destination = format("%s/64", local.stationary.ipv6)
-          ipv6_gateway     = local.stationary.transit_ipv6
-          distance         = 255
-        }
-      ]
-    }
-  }
+module "bootstrap_stationary" {
+  source           = "./modules/bootstrap"
+  providers        = { routeros = routeros.stationary }
+  config           = local.bootstrap_configs.stationary
+  output_directory = "${path.root}/bootstrap/generated"
 }
 
-module "bootstrap_script" {
-  source   = "../modules/templatefile-generator"
-  for_each = local.bootstrap_configs
-  config = merge(each.value,
-    {
-      local_bridge_ports = join("; ", formatlist("\"%s\"", each.value.local_bridge_ports))
+module "bootstrap_kuberack" {
+  source           = "./modules/bootstrap"
+  providers        = { routeros = routeros.kuberack }
+  config           = local.bootstrap_configs.kuberack
+  output_directory = "${path.root}/bootstrap/generated"
+}
+
+locals {
+  bootstrap_adoption = {
+    bindings = flatten([for site, bindings in {
+      stationary = module.bootstrap_stationary.adoption
+      kuberack   = module.bootstrap_kuberack.adoption
+      } : [for binding in bindings : merge(binding, {
+        router  = site
+        address = "module.bootstrap_${site}.${binding.address}"
+    })]])
+    routers = {
+      stationary = {
+        url      = var.stationary_hosturl
+        username = local.config["stationary_rb5009"]["username"]
+        password = local.config["stationary_rb5009"]["password"]
+        insecure = var.ALLOW_INSECURE
+      }
+      kuberack = {
+        url      = var.kuberack_hosturl
+        username = local.config["kuberack_rb5009"]["username"]
+        password = local.config["kuberack_rb5009"]["password"]
+        insecure = var.ALLOW_INSECURE
+      }
     }
-  )
-  filename      = "${each.key}.rsc"
-  template_path = "${path.root}/bootstrap/bootstrap.tftpl.rsc"
+  }
 }

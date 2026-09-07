@@ -57,6 +57,10 @@ class FakeTerraform:
         if args[:2] == ("state", "rm"):
             for address in args[3:]:
                 del self.bindings[address.split(".")[-1]]
+        elif args[:2] == ("state", "mv"):
+            self.bindings[args[-1].split(".")[-1]] = self.bindings.pop(
+                args[-2].split(".")[-1]
+            )
         elif args[0] == "import":
             self.bindings[args[-2].split(".")[-1]] = args[-1]
         else:
@@ -70,7 +74,7 @@ def response(identifier="*9"):
 
 
 class AdoptionTest(unittest.TestCase):
-    def run_reconcile(self, terraform, fetch=None, apply=True):
+    def run_reconcile(self, terraform, fetch=None, apply=True, moves=()):
         with (
             tempfile.TemporaryDirectory() as directory,
             contextlib.redirect_stdout(io.StringIO()),
@@ -81,8 +85,54 @@ class AdoptionTest(unittest.TestCase):
                 fetch or (lambda *_: response()),
                 apply,
                 Path(directory),
+                moves,
             )
             return list(Path(directory).rglob("*.tfstate")) != []
+
+    def test_migration_preview_does_not_write_state(self):
+        terraform = FakeTerraform({"old": "*9"})
+        self.run_reconcile(
+            terraform, apply=False, moves=[("routeros_ip_address.old", BINDING.address)]
+        )
+        self.assertEqual(terraform.calls, [])
+
+    def test_legacy_address_moves_without_reimporting_correct_id(self):
+        terraform = FakeTerraform({"old": "*9"})
+        self.run_reconcile(
+            terraform, moves=[("routeros_ip_address.old", BINDING.address)]
+        )
+        self.assertEqual(terraform.bindings, {"lan": "*9"})
+        self.assertEqual([call[:2] for call in terraform.calls], [("state", "mv")])
+
+    def test_legacy_address_and_stale_id_are_both_repaired(self):
+        terraform = FakeTerraform({"old": "*2"})
+        self.run_reconcile(
+            terraform, moves=[("routeros_ip_address.old", BINDING.address)]
+        )
+        self.assertEqual(terraform.bindings, {"lan": "*9"})
+        self.assertEqual(
+            [call[0] for call in terraform.calls], ["state", "state", "import"]
+        )
+
+    def test_migration_conflict_fails_before_any_write(self):
+        terraform = FakeTerraform({"old": "*2", "lan": "*9"})
+        with self.assertRaisesRegex(RuntimeError, "migration conflict"):
+            self.run_reconcile(
+                terraform, moves=[("routeros_ip_address.old", BINDING.address)]
+            )
+        self.assertEqual(terraform.calls, [])
+
+    def test_resource_collection_move_preserves_keys(self):
+        target = 'routeros_ip_route.peer["kuberack"]'
+        binding = adopt.Binding("stationary", target, "ip/route", "{}", False)
+        old = 'routeros_ip_route.old["kuberack"]'
+        entries, moves = adopt.migrated_entries(
+            [adopt.Entry(old, "*1", PROVIDER, "routeros_ip_route")],
+            [("routeros_ip_route.old", "routeros_ip_route.peer")],
+            [binding],
+        )
+        self.assertEqual(entries[0].address, target)
+        self.assertEqual(moves, [(old, target)])
 
     def test_preview_never_mutates_state(self):
         terraform = FakeTerraform({"lan": "*2"})

@@ -1,10 +1,4 @@
 locals {
-  stationary_lan = {
-    network          = "10.1.1.0/24"
-    gateway_ip       = "10.1.1.1"
-    dhcp_pool_ranges = ["10.1.1.100-10.1.1.254"]
-    dhcp_server_name = "stationary-dhcp"
-  }
   stationary_lan_static_leases_and_records = {
     "crs310.networking.kalski.xyz" = {
       ip          = "10.1.1.2"
@@ -27,11 +21,6 @@ locals {
       ip                = "10.1.1.30"
       mac_address       = local.config["macs"]["zima"]
       include_subdomain = true
-    }
-  }
-  external_dns_records = {
-    "poenttoe.kalski.xyz" = {
-      ip = "10.255.255.3"
     }
   }
   k8s_control_plane_nodes = {
@@ -73,76 +62,11 @@ locals {
       }
     }
   )
-  transit_network = {
-    kuberack_address     = "10.254.254.1/30"
-    stationary_address   = "10.254.254.2/30"
-    kuberack_ipv6        = "fd00:de:ad:ff::1"
-    stationary_ipv6      = "fd00:de:ad:ff::2"
-    stationary_interface = "ether1"
-  }
-  stationary = {
-    ip                = local.stationary_lan.gateway_ip
-    ipv6              = "fd00:de:ad:1::1"
-    zerotier_ip       = "10.255.255.2"
-    domain_name       = "stationary.networking.kalski.xyz"
-    wan_interface     = "ether8"
-    transit_address   = local.transit_network.stationary_address
-    transit_ipv6      = local.transit_network.stationary_ipv6
-    transit_interface = local.transit_network.stationary_interface
-    enable_cake       = true
-    # DNA's CMTS advertises itself as our v6 router and delegates a /56, but never
-    # answers Neighbor Solicitations for that gateway, so IPv6 cannot leave the CPE.
-    # Keep this false until the ISP fixes it, so clients are not handed dead IPv6.
-    enable_ipv6      = false
-    ipv6_prefix_hint = "::/56"
-    # The ISP's first hop is added automatically from the routing table; loss there but
-    # not on the resolvers points at our access link, loss on all of them further out.
-    netwatch_targets = {
-      cloudflare-dns = "1.1.1.1"
-      google-dns     = "8.8.8.8"
-      poenttoe       = local.external_dns_records["poenttoe.kalski.xyz"].ip
-    }
-  }
-  kuberack = {
-    transit_address   = local.transit_network.kuberack_address
-    transit_ipv6      = local.transit_network.kuberack_ipv6
-    transit_interface = "ether1"
-    ip                = "10.10.10.1"
-    ipv6              = "fd00:de:ad:10::1"
-    zerotier_ip       = "10.255.255.1"
-    domain_name       = "kuberack.networking.kalski.xyz"
-    wan_interface     = "ether8"
-    enable_cake       = true
-    enable_ipv6       = false
-    ipv6_prefix_hint  = "::/56"
-    netwatch_targets = {
-      cloudflare-dns = "1.1.1.1"
-      google-dns     = "8.8.8.8"
-      poenttoe       = local.external_dns_records["poenttoe.kalski.xyz"].ip
-    }
-  }
-  kuberack_network = {
-    network = "10.10.10.0/24"
-  }
-  kuberack_dhcp_config = {
-    server_name     = "kuberack-dhcp"
-    network_address = "10.10.10.0/24"
-    pool_ranges     = ["10.10.10.100-10.10.10.254"]
-  }
-  all_router_dns_records = {
-    "stationary.networking.kalski.xyz" = {
-      ip   = local.stationary.ip
-      ipv6 = local.stationary.ipv6
-    },
-    "kuberack.networking.kalski.xyz" = {
-      ip   = local.kuberack.ip
-      ipv6 = local.kuberack.ipv6
-    }
-  }
+
 }
 
 locals {
-  dns_a_record = merge(local.stationary_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.all_router_dns_records, local.external_dns_records)
+  dns_a_record = merge(local.stationary_lan_static_leases_and_records, local.kuberack_lan_static_leases_and_records, local.external_dns_records)
 }
 
 
@@ -152,8 +76,7 @@ module "stationary" {
     routeros.stationary = routeros.stationary
   }
   config = {
-    bootstrap_script = module.bootstrap_script["stationary"]
-    device_config    = local.stationary
+    device_config = local.stationary
     dhcp_config = {
       server_name     = local.stationary_lan.dhcp_server_name
       network_address = local.stationary_lan.network
@@ -229,7 +152,6 @@ module "kuberack" {
     routeros.kuberack = routeros.kuberack
   }
   config = {
-    bootstrap_script  = module.bootstrap_script["kuberack"]
     device_config     = local.kuberack
     lan_static_leases = local.kuberack_lan_static_leases_and_records
     lan_dhcp_config   = local.kuberack_dhcp_config

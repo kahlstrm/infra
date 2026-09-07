@@ -1,0 +1,60 @@
+{
+  "moved": [
+    {
+      "from": "module.stationary.module.rb5009.routeros_ip_address.bridge_ip",
+      "to": "module.bootstrap_stationary.routeros_ip_address.management[\"lan\"]"
+    },
+    {
+      "from": "module.stationary.module.rb5009.routeros_ip_address.transit_address",
+      "to": "module.bootstrap_stationary.routeros_ip_address.management[\"transit\"]"
+    },
+    {
+      "from": "module.stationary.module.rb5009.routeros_ip_route.peer_lan",
+      "to": "module.bootstrap_stationary.routeros_ip_route.peer"
+    },
+    {
+      "from": "module.stationary.module.rb5009.routeros_file.bootstrap_script",
+      "to": "module.bootstrap_stationary.routeros_file.script"
+    },
+    {
+      "from": "module.bootstrap_script[\"stationary\"].local_file.template_file_result",
+      "to": "module.bootstrap_stationary.local_file.script"
+    },
+    {
+      "from": "module.stationary.module.rb5009.module.dns.routeros_ip_dns_record.a_record[\"stationary.networking.kalski.xyz\"]",
+      "to": "module.bootstrap_stationary.routeros_ip_dns_record.a[\"stationary.networking.kalski.xyz\"]"
+    },
+    {
+      "from": "module.stationary.module.rb5009.module.dns.routeros_ip_dns_record.a_record[\"kuberack.networking.kalski.xyz\"]",
+      "to": "module.bootstrap_stationary.routeros_ip_dns_record.a[\"kuberack.networking.kalski.xyz\"]"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.routeros_ip_address.bridge_ip",
+      "to": "module.bootstrap_kuberack.routeros_ip_address.management[\"lan\"]"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.routeros_ip_address.transit_address",
+      "to": "module.bootstrap_kuberack.routeros_ip_address.management[\"transit\"]"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.routeros_ip_route.peer_lan",
+      "to": "module.bootstrap_kuberack.routeros_ip_route.peer"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.routeros_file.bootstrap_script",
+      "to": "module.bootstrap_kuberack.routeros_file.script"
+    },
+    {
+      "from": "module.bootstrap_script[\"kuberack\"].local_file.template_file_result",
+      "to": "module.bootstrap_kuberack.local_file.script"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.module.dns.routeros_ip_dns_record.a_record[\"stationary.networking.kalski.xyz\"]",
+      "to": "module.bootstrap_kuberack.routeros_ip_dns_record.a[\"stationary.networking.kalski.xyz\"]"
+    },
+    {
+      "from": "module.kuberack.module.rb5009.module.dns.routeros_ip_dns_record.a_record[\"kuberack.networking.kalski.xyz\"]",
+      "to": "module.bootstrap_kuberack.routeros_ip_dns_record.a[\"kuberack.networking.kalski.xyz\"]"
+    }
+  ]
+}
