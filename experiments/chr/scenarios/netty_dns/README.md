@@ -4,6 +4,11 @@ Test whether caching root NS records in RouterOS changes negative DNS replies
 and causes Vert.x resolution to exhaust its query budget. This standalone probe
 uses the [generic CHR lab](../../README.md) and has no application dependency.
 
+For the smaller reproduction of the RouterOS reply itself, use the
+[three-query DNS scenario](../dns_referral/README.md). That document also compares
+Node/c-ares, Go, and direct Netty resolution; concurrency and Vert.x are not
+required to observe failures with the four-query limit.
+
 ## Run
 
 From the repository root:

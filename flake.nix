@@ -29,6 +29,9 @@
         devShells.chr = pkgs.mkShellNoCC {
           packages = chrPackages;
         };
+        devShells.chr-dns = pkgs.mkShellNoCC {
+          packages = chrPackages ++ [ pkgs.dig ];
+        };
         devShells.chr-netty = pkgs.mkShellNoCC {
           packages =
             chrPackages
