@@ -51,7 +51,11 @@ Available scenarios:
 
 | Name | Purpose | Documentation |
 | --- | --- | --- |
+| `dns-referral` | Three-query RouterOS DNS response reproduction, no Java | [README](scenarios/dns_referral/README.md) |
 | `netty-dns` | Root NS caching and Vert.x/Netty DNS query-budget failures | [README](scenarios/netty_dns/README.md) |
+
+For the minimal DNS-only scenario, use `nix develop .#chr-dns` and
+`just chr run dns-referral`.
 
 A scenario runs against the selected VM and may change its configuration. Use
 `fresh` to return to RouterOS defaults between unrelated experiments. Scenarios

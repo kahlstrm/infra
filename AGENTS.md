@@ -49,7 +49,15 @@ Keep experiment-specific settings, dependencies, probes, and results in
 `experiments/chr/scenarios/<name>/`; the base bootstrap handles VM access only.
 Scenarios may change the lab configuration; use `fresh` between unrelated tests.
 
-The standalone Vert.x/Netty DNS reproduction is a separate scenario:
+The minimal RouterOS DNS response reproduction needs only dig:
+
+```bash
+nix develop .#chr-dns
+just chr start
+just chr run dns-referral
+```
+
+The standalone Vert.x/Netty application-level reproduction is a separate scenario:
 
 ```bash
 nix develop .#chr-netty
