@@ -135,12 +135,7 @@
 # The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
 # Creating them here would leave Terraform unable to manage them without a per-device
 # import, since this script only ever runs once at provisioning.
-# RouterOS 7.21 renamed this setting; parse at runtime to support older images too.
-:do {
-  [:parse "/certificate/settings set builtin-trust-store=all"]
-} on-error={
-  [:parse "/certificate/settings set builtin-trust-anchors=trusted"]
-}
+/certificate/settings set builtin-trust-store=all
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
