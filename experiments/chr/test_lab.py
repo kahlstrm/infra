@@ -242,6 +242,42 @@ class DownloadTest(unittest.TestCase):
 
 
 class BootstrapConsoleTest(unittest.TestCase):
+    def test_retries_saved_password_after_blank_login_fails(self):
+        with TemporaryDirectory() as directory:
+            lab = Lab(SimpleNamespace(version="7.21.3", state=Path(directory), ssh_port=2222))
+            (lab.directory / "password").write_text("saved-password")
+            lab.key.with_suffix(".pub").write_text("ssh-ed25519 test")
+            console = Mock()
+            console.recv.side_effect = [
+                b"Login:", b"Password:",
+                b"Login failed, incorrect username or password\r\nLogin:",
+                b"Password:", b"[admin@chr-lab] >",
+                *([b"[admin@chr-lab] >"] * 5),
+            ]
+            with patch("lab.socket.socket") as socket, patch("lab.select.select", return_value=([console], [], [])):
+                socket.return_value.__enter__.return_value = console
+                lab.bootstrap()
+            sent = [call.args[0] for call in console.sendall.call_args_list]
+            self.assertEqual(sent[:5], [b"\r", b"admin+ct\r", b"\r", b"admin+ct\r", b"saved-password\r"])
+            self.assertEqual((lab.directory / "password").read_text(), "saved-password")
+
+    def test_rejected_saved_password_fails_without_repeated_attempts(self):
+        with TemporaryDirectory() as directory:
+            lab = Lab(SimpleNamespace(version="7.21.3", state=Path(directory), ssh_port=2222))
+            (lab.directory / "password").write_text("saved-password")
+            lab.key.with_suffix(".pub").write_text("ssh-ed25519 test")
+            console = Mock()
+            console.recv.side_effect = [
+                b"Login:", b"Password:", b"Login failed", b"Login:",
+                b"Password:", b"Login failed",
+            ]
+            with patch("lab.socket.socket") as socket, patch("lab.select.select", return_value=([console], [], [])):
+                socket.return_value.__enter__.return_value = console
+                with self.assertRaisesRegex(RuntimeError, "saved lab password"):
+                    lab.bootstrap()
+            sent = [call.args[0] for call in console.sendall.call_args_list]
+            self.assertEqual(sent.count(b"saved-password\r"), 1)
+
     def test_repeated_password_prompt_does_not_send_password_as_command(self):
         with TemporaryDirectory() as directory:
             lab = Lab(

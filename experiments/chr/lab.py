@@ -186,6 +186,7 @@ class Lab:
             console.sendall(b"\r")
             buffer = ""
             password_stage = 0
+            login_password = ""
             deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 if not select.select([console], [], [], 0.25)[0]:
@@ -195,12 +196,17 @@ class Lab:
                     raise RuntimeError("CHR console disconnected during bootstrap")
                 buffer += ANSI.sub("", data.decode(errors="replace"))
                 response = None
+                if "login failed" in buffer.lower():
+                    if login_password:
+                        raise RuntimeError("CHR login failed with the saved lab password")
+                    login_password = password
+                    buffer = re.split("login failed", buffer, maxsplit=1, flags=re.I)[1]
                 if "\x1bZ" in buffer:
                     response = "\x1b[?1;2c"
                 elif "Login:" in buffer:
                     response = "admin+ct\r"
                 elif "Password:" in buffer:
-                    response = "\r"
+                    response = login_password + "\r"
                 elif "Do you want to see the software license" in buffer:
                     response = "n\r"
                 elif password_stage == 0 and "new password>" in buffer:
