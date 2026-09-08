@@ -70,20 +70,6 @@ This network is designed for high performance when docked and graceful reachabil
 
 ## Adopting a bootstrapped router
 
-For an existing live deployment, migrate state **before resetting or adopting**.
-The temporary `bootstrap-moves.tf.json` lets Terraform rename the bindings:
-
-```sh
-terraform -chdir=local-networking init
-terraform -chdir=local-networking plan -refresh-only -out=bootstrap-migration.tfplan
-# Review the state changes, then record them without changing router configuration:
-terraform -chdir=local-networking apply bootstrap-migration.tfplan
-```
-
-Verify the new addresses with `terraform -chdir=local-networking state list`,
-then remove the temporary migration file before merging #6. The importer only
-handles current resource addresses.
-
 Bootstrap installs a self-signed HTTPS certificate. Until Terraform installs the
 managed certificates, both the importer and RouterOS providers need the existing
 `ALLOW_INSECURE` override. Run from the repository root:
