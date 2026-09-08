@@ -97,25 +97,33 @@ importer never automatically retries with certificate verification disabled.
 
 **Bootstrap script (one-time after reset)**
 
-- Set system identity, build LAN bridge (ports, MAC), enable IPv6 SLAAC/RA on the bridge.
+- Set system identity and build the LAN bridge (ports, MAC).
 - Set management IPv4 addresses on the LAN bridge and transit interface, and add IPv4 routes to the peer LAN via transit.
 - Configure transit interface with IPv6 address and add to LAN/MGMT_ALLOWED lists.
-- Add symmetric IPv6 management routes so routers can reach each other during bootstrap:
+- Add symmetric IPv6 management routes for use when IPv6 is enabled:
   - Stationary: route to `fd00:de:ad:10::/64` via `fd00:de:ad:ff::1` (kuberack transit)
   - Kuberack: route to `fd00:de:ad:1::/64` via `fd00:de:ad:ff::2` (stationary transit)
-- Add static DNS A and AAAA records for both routers (resolving to local bridge IPs).
-- Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client + IPv6 PD, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
+- Add static DNS A and AAAA records for both routers (resolving to local bridge IPs); disable AAAA records for routers with IPv6 disabled.
+- Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
 - DHCP servers and leases are configured by Terraform afterward.
 
 Run the bootstrap importer before the first apply after commissioning or reset.
-It binds the existing management IPv4 addresses, peer IPv4 routes, and router DNS
-A records to the per-router bootstrap modules in Terraform state. Terraform then
-manages these same objects on subsequent applies.
+It binds the existing management IPv4 addresses, peer IPv4 routes, router DNS
+records, global IPv6 settings, and LAN advertisements to the per-router bootstrap
+modules in Terraform state. Terraform then manages these objects on subsequent applies.
+
+`enable_ipv6=false` disables the entire IPv6 stack, forwarding, WAN prefix
+delegation, LAN advertisements, and router AAAA records, including local IPv6
+between sites. With this configuration, enable IPv6 only when upstream IPv6
+works: the advertised default route otherwise sends clients toward an unusable
+Internet path. Keeping local IPv6 without that default route would require
+explicit client routes to the other site's IPv6 subnet, which we do not configure.
 
 **Terraform apply (ongoing)**
 
 - Manage adopted IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether1); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
 - DHCP: `stationary-dhcp` for 10.1.1.0/24 with static leases; `kuberack-dhcp` for 10.10.10.0/24 with static leases.
+- IPv6: manage the adopted settings and advertisements; request WAN prefix delegation only when enabled.
 - DNS: resolver settings plus static records/adlists on both routers.
 - Routing: manage adopted peer routes via transit; add ZeroTier fallback routes (distance 200) both ways.
 - ZeroTier instances/interfaces/addresses and MGMT_ALLOWED membership.

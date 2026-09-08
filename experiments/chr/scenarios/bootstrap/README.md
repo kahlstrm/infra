@@ -30,8 +30,9 @@ The test checks:
   as the source, exercising the transit link and return routes.
 - IPv6 is disabled globally, LAN advertisements are disabled, and router AAAA
   records stay disabled before and after adoption and reset recovery.
-- The production adoption command imports the management addresses, peer route,
-  A records into the real bootstrap modules. A repeated adoption changes nothing.
+- The production adoption command imports management addresses, peer routes,
+  A/AAAA records, IPv6 settings, and LAN advertisements into the bootstrap modules.
+  A repeated adoption changes nothing.
   Before any apply, every adopted router resource must have a no-op plan. Only
   creation of the local/uploaded script files is allowed; updates and replacements
   fail the test. After creating those files, the full module plan must be empty.
@@ -102,4 +103,3 @@ firewall traffic and transit failure/recovery. IPv6 on/off transitions need
 client-side address, route, DNS, and connectivity checks. ZeroTier integration
 and physical RB5009 commissioning remain separate tests. These are planned
 coverage, not assertions implemented by this bootstrap scenario.
-

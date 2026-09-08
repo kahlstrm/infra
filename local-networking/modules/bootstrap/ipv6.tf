@@ -1,5 +1,5 @@
 # Advertising a default route with broken WAN IPv6 causes client delays.
-# Withdrawing only that route also loses client access to cross-site ULA subnets.
+# Without explicit client routes, withdrawing it also loses cross-site ULA access.
 resource "routeros_ipv6_settings" "this" {
   disable_ipv6                 = !var.config.enable_ipv6
   forward                      = var.config.enable_ipv6
