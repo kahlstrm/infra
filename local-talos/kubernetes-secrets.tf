@@ -244,3 +244,17 @@ resource "kubernetes_secret" "opencode_credentials" {
     OPENCODE_SERVER_PASSWORD = local.config["opencode"]["server_password"]
   }
 }
+
+resource "kubernetes_secret" "docsight_credentials" {
+  depends_on = [kubernetes_namespace.monitoring]
+  metadata {
+    name      = "docsight-credentials"
+    namespace = "monitoring"
+  }
+  data = {
+    MODEM_USER            = local.config["cable_modem"]["username"]
+    MODEM_PASSWORD        = local.config["cable_modem"]["password"]
+    ADMIN_PASSWORD        = local.config["docsight"]["admin_password"]
+    DOCSIGHT_SCRAPE_TOKEN = local.config["docsight"]["scrape_token"]
+  }
+}
