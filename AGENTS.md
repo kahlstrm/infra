@@ -22,7 +22,9 @@ cd local-talos && terraform init && terraform plan && terraform apply
 cd hetzner-infra && terraform init && terraform plan && terraform apply
 ```
 
-Target specific modules: `terraform apply -target=module.stationary` or `terraform apply -target=module.kuberack`
+Site-specific applies must include the matching bootstrap module, e.g.
+`terraform apply -target=module.stationary -target=module.bootstrap_stationary`
+(use `kuberack` for both targets at that site).
 
 Format all HCL: `terraform fmt -recursive`
 

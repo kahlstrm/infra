@@ -136,7 +136,8 @@ The configuration is organized into two Terraform modules:
 ### Usage
 
 - **Normal operation**: `terraform apply`
-- **Device specific apply**: `terraform apply -target=module.stationary`
+- **Stationary only**: `terraform apply -target=module.stationary -target=module.bootstrap_stationary`
+- **Kuberack only**: `terraform apply -target=module.kuberack -target=module.bootstrap_kuberack`
 
 ### SSH Access
 
