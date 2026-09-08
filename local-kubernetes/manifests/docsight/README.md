@@ -1,75 +1,44 @@
 # DOCSight
 
-One replica in Talos's dedicated `docsight` namespace polls the Sagemcom modem every 60
-seconds. SQLite history uses a 2 GiB local-storage PVC with seven-day retention.
-Prometheus in `monitoring` discovers the ServiceMonitor and alert rules in
-`docsight` through its existing cross-namespace selectors. Keep the
-`release: observability` labels. The scrape credential stays in `docsight`,
-alongside its ServiceMonitor. Prometheus retains its existing history.
-The local volume binds the workload to its storage node; this is not an HA setup.
+Internal UI: **https://docsight.kube.kalski.xyz**, using the configured administrator password.
 
-The UI is available at **https://docsight.kube.kalski.xyz** through the existing
-private Traefik ingress class, with a certificate from the letsencrypt issuer.
-Log in with the configured administrator password. The same app service exposes
-`/metrics`, protected by a metrics-scoped bearer token for Prometheus.
+Runs in the `docsight` namespace with a 2 GiB local PVC and seven-day history.
+Prometheus scrapes every 60 seconds using a metrics-scoped token. The local volume
+pins the single replica to its storage node; updates briefly interrupt collection.
+Flannel does not enforce NetworkPolicy, so service access relies on application authentication.
 
-For direct troubleshooting access:
+## Activate
 
-```sh
-kubectl --context admin@klusse -n docsight port-forward deployment/docsight 8765:8765
-```
+1. Merge `kahlstrm/docsight#4` and confirm its main image build succeeds.
+2. Run `just edit` in `local-networking` and add `docsight.admin_password` and
+   `docsight.scrape_token`. Use separate random values; the token must start with
+   `dsk_` and be at least 48 characters. Existing `cable_modem` credentials are reused.
+3. Review and apply the `local-talos` Terraform plan to provision the namespace and
+   credentials. Manage secrets through Terraform, not kubectl.
+4. Merge the infra PR. Argo CD discovers and syncs the application automatically.
+5. Check pod readiness, UI login, and Prometheus's DOCSight target and metrics.
 
-The current Flannel CNI does not enforce NetworkPolicy. Internal cluster clients
-can reach the app service; administrator authentication protects management
-routes. The included policy declares ingress from Prometheus and private Traefik
-for an enforcing CNI. This deployment creates no public ingress.
+The GHCR package must remain public. Authorize Renovate for `kahlstrm/infra` to
+receive image updates.
 
-## Provision and activate
+## Maintain
 
-1. Merge the DOCSight image-workflow PR and confirm a successful main build.
-   Anonymous GHCR pulls were verified for the initial pinned digest. Keep the
-   package public; no registry secret is needed.
-2. Add `docsight.admin_password` and `docsight.scrape_token` to the existing
-   local-networking Google Secret Manager blob using its `just edit` workflow.
-   Use a strong random administrator password and a separate random scrape token
-   beginning with `dsk_`, at least 48 characters long. The existing
-   `cable_modem.username` and `cable_modem.password` provide modem access.
-3. Review and apply the local-talos Terraform plan to create docsight-credentials
-   in docsight. Terraform also owns this namespace. Secrets are managed through Terraform, not kubectl.
-4. Verify the digest in kustomization.yaml is published and pullable. Merge the
-   infra PR; the existing apps root application discovers docsight.yaml and
-   Argo CD automatically syncs it.
-5. Check the pod is ready, Prometheus's docsight target is up, and uptime and
-   DOCSIS status metrics are present. No modem reboot is required.
+Renovate proposes digest updates; merging them deploys through Argo CD. The fork
+builds on main image changes, version tags, and manual dispatch. Merge upstream
+source changes separately.
 
-Kustomize updates the scripts ConfigMap name when its contents change, triggering
-a rollout. The PVC is protected from Argo prune/application deletion. Recreate
-strategy avoids simultaneous writers; upgrades have a brief monitoring gap.
-
-## Updates
-
-The fork tests and builds images on main changes, version tags and manual
-dispatch. There are no scheduled image rebuilds. `main` is the discovery tag; Kubernetes uses
-its pinned digest. Install/authorize the Renovate GitHub app for kahlstrm/infra
-if it is not already installed. renovate.json scopes updates to this image only
-and leaves merge approval manual. Merging a digest update deploys through Argo CD.
-
-Review upstream changes and merge them into the DOCSight fork separately.
-Image rebuilds do not update application source or pinned Python packages.
-
-Changing a secret does not restart the pod automatically. After applying a
-credential rotation through Terraform, restart the deployment so bootstrap can
-update the managed token hash:
+After rotating credentials through Terraform:
 
 ```sh
 kubectl --context admin@klusse -n docsight rollout restart deployment/docsight
 ```
 
-For rollback, revert the image-digest commit. Preserve a copy of the data volume
-before upgrades that migrate SQLite; an older image may require its matching
-pre-upgrade database. Reverting an image does not undo database migrations.
+Rollback by reverting the digest commit. Back up SQLite before schema-changing
+upgrades; reverting the image does not revert the database. Argo pruning preserves the PVC.
 
-## Validation
+## Validate
+
+From the repository root, with kubectl, Python/PyYAML, promtool, and Docker available:
 
 ```sh
 kubectl kustomize local-kubernetes/manifests/docsight > /tmp/docsight.yaml
@@ -78,7 +47,3 @@ python local-kubernetes/tests/docsight/check_rules.py
 DOCSIGHT_IMAGE=ghcr.io/kahlstrm/docsight@sha256:ACTUAL_DIGEST \
   python local-kubernetes/tests/docsight/smoke.py
 ```
-
-The rule tests use PyYAML and promtool. The smoke test uses Docker and synthetic
-credentials, verifies token rotation, UI login and metrics-only access, and removes its
-containers and volume when finished.
