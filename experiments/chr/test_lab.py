@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import unittest
 import zipfile
@@ -45,6 +46,61 @@ class AdoptionPlanTest(unittest.TestCase):
                     self.assertRaises(RuntimeError),
                 ):
                     verify_adoption_plan(self.plan(resource_type, actions, name))
+
+
+class StoreImageTest(unittest.TestCase):
+    def setUp(self):
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.lab = Lab(SimpleNamespace(version="7.21.3", state=self.root / "state", ssh_port=2222))
+        self.image = self.root / "store/chr-7.21.3"
+        self.image.mkdir(parents=True)
+        (self.image / "chr-7.21.3.img").write_bytes(b"base image")
+
+    def test_store_image_is_rooted_before_overlay_creation(self):
+        self.lab.key.touch()
+        with (
+            patch.dict(os.environ, CHR_IMAGE=str(self.image)),
+            patch("lab.run") as command,
+            patch.object(self.lab, "downloaded_image") as download_image,
+        ):
+            self.lab.prepare()
+        download_image.assert_not_called()
+        root_call, overlay_call = command.call_args_list
+        self.assertEqual(root_call.args[:3], ("nix-store", "--realise", str(self.image)))
+        self.assertIn("--indirect", root_call.args)
+        self.assertIn(str(self.lab.root / "images/nix-roots" / self.image.name), root_call.args)
+        self.assertEqual(overlay_call.args[:2], ("qemu-img", "create"))
+        self.assertIn(str(self.image / "chr-7.21.3.img"), overlay_call.args)
+
+    def test_shared_image_directory_uses_a_stable_gc_root_path(self):
+        shared = self.root / "shared-images"
+        shared.mkdir()
+        (self.lab.root / "images").symlink_to(shared, target_is_directory=True)
+        with patch.dict(os.environ, CHR_IMAGE=str(self.image)), patch("lab.run") as command:
+            self.lab.base_image()
+        self.assertIn(str(shared / "nix-roots" / self.image.name), command.call_args.args)
+
+    def test_other_versions_use_download_cache(self):
+        self.lab.version = "other"
+        with (
+            patch.dict(os.environ, CHR_IMAGE=str(self.image)),
+            patch("lab.run") as command,
+            patch.object(self.lab, "downloaded_image", return_value="downloaded") as download_image,
+        ):
+            self.assertEqual(self.lab.base_image(), "downloaded")
+        download_image.assert_called_once()
+        command.assert_not_called()
+
+    def test_gc_root_failure_prevents_overlay_creation(self):
+        with (
+            patch.dict(os.environ, CHR_IMAGE=str(self.image)),
+            patch("lab.run", side_effect=subprocess.CalledProcessError(1, "nix-store")) as command,
+            self.assertRaises(subprocess.CalledProcessError),
+        ):
+            self.lab.prepare()
+        command.assert_called_once()
 
 
 class DownloadTest(unittest.TestCase):

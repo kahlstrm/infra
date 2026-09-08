@@ -30,7 +30,20 @@ it; `fresh` archives the old disk and creates a clean router. Use
 `just chr --version 7.23.5 start` to choose another version, stopping the old
 VM first if its SSH port is in use. SSH defaults to `127.0.0.1:2222`.
 
-Images, disks, credentials, and captures live outside Git under
+The Nix shells provide a pristine CHR image pinned by version and SHA-256 in
+`image.nix`. QEMU uses this read-only Nix store image with a writable overlay.
+The runner registers GC roots under the lab's `images/nix-roots/` directory;
+keep these while retaining disks, including archived disks. Removing the whole
+lab state directory also removes these roots. Versions not provided by the Nix
+shell use the existing download cache.
+
+To update the pinned image, change its version and hash in `image.nix` and the
+runner's default version together. `nix build .#chr-image` downloads, verifies,
+and extracts the image. CI caches the Nix store using a key derived from the
+platform, flake definitions, and image definition, covering tools and CHR without
+caching VM disks or credentials.
+
+Disks, credentials, fallback downloads, and captures live outside Git under
 `$XDG_STATE_HOME/chr` (default `~/.local/state/chr`). Override this with
 `--state /absolute/path`. State is private and operations on the same directory
 are locked. Keep images with their overlays when moving or backing up the lab.

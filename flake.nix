@@ -16,6 +16,7 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        chrImage = pkgs.callPackage ./experiments/chr/image.nix { };
         chrPackages = with pkgs; [
           python3
           qemu
@@ -25,11 +26,14 @@
         ];
       in
       {
+        packages.chr-image = chrImage;
         devShells.default = import ./shell.nix { inherit pkgs; };
         devShells.chr = pkgs.mkShellNoCC {
+          CHR_IMAGE = chrImage;
           packages = chrPackages;
         };
         devShells.chr-bootstrap = pkgs.mkShellNoCC {
+          CHR_IMAGE = chrImage;
           packages = chrPackages ++ [ pkgs.opentofu pkgs.jq pkgs.dig ];
         };
 

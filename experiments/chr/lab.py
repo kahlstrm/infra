@@ -117,7 +117,22 @@ class Lab:
             raise RuntimeError(output)
         return output
 
-    def prepare(self):
+    def base_image(self):
+        store_path = os.environ.get("CHR_IMAGE")
+        if store_path:
+            image = Path(store_path) / f"chr-{self.version}.img"
+            if image.exists():
+                roots = (self.root / "images/nix-roots").resolve()
+                roots.mkdir(parents=True, exist_ok=True)
+                run(
+                    "nix-store", "--realise", store_path,
+                    "--add-root", str(roots / Path(store_path).name), "--indirect",
+                    capture_output=True,
+                )
+                return image
+        return self.downloaded_image()
+
+    def downloaded_image(self):
         images = self.root / "images"
         images.mkdir(exist_ok=True)
         archive = images / f"chr-{self.version}.img.zip"
@@ -140,6 +155,10 @@ class Lab:
                 temporary.replace(image)
             finally:
                 temporary.unlink(missing_ok=True)
+        return image
+
+    def prepare(self):
+        image = self.base_image()
         if not self.disk.exists():
             run(
                 "qemu-img",
