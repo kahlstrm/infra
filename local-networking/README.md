@@ -68,6 +68,31 @@ This network is designed for high performance when docked and graceful reachabil
 - **ZeroTier Paths**: High-distance routes over ZeroTier connect `10.10.10.0/24` and `10.1.1.0/24` when the wired interconnect is absent.
 - **Kuberack Upstream**: When separated, kuberack needs its own WAN connection or ZeroTier path to reach the internet.
 
+## Adopting a bootstrapped router
+
+Bootstrap installs a self-signed HTTPS certificate. Until Terraform installs the
+managed certificates, both the importer and RouterOS providers need the existing
+`ALLOW_INSECURE` override. Run from the repository root:
+
+```sh
+terraform -chdir=local-networking init
+(
+  export TF_VAR_ALLOW_INSECURE=true
+  just adopt-bootstrap --router stationary --router kuberack
+  just adopt-bootstrap --router stationary --router kuberack --apply
+  terraform -chdir=local-networking plan -out=bootstrap.tfplan
+  # Review the plan before applying it.
+  terraform -chdir=local-networking apply bootstrap.tfplan
+)
+terraform -chdir=local-networking plan
+```
+
+Select only the router being commissioned when resetting one site. The subshell
+limits the override to this commissioning session; the final plan checks access
+with normal certificate verification. Terraform saved plans include variable
+values, so do not reuse this bootstrap plan for subsequent operations. The
+importer never automatically retries with certificate verification disabled.
+
 ## Provisioning Responsibilities
 
 **Bootstrap script (one-time after reset)**

@@ -60,6 +60,10 @@ After bootstrapping or resetting a router, preview its Terraform adoption with
 reconcile state, then review a normal networking-layer plan. Run
 `terraform -chdir=local-networking init` first. The command uses existing provider
 credentials and the shared bootstrap configuration; it does not configure routers.
+Fresh bootstrap/reset uses a self-signed certificate: set
+`TF_VAR_ALLOW_INSECURE=true` for adoption and the initial apply that installs
+managed certificates, then remove the override. See the
+[commissioning commands](local-networking/README.md#adopting-a-bootstrapped-router).
 It preserves correct bindings, replaces stale IDs, and rejects missing required or
 ambiguous objects. A missing optional bootstrap file is left for Terraform to create.
 The bootstrap module owns the script template, management addresses, peer routes,

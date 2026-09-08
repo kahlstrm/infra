@@ -266,6 +266,14 @@ def rest_fetch(routers):
             ) as response:
                 return response.read().decode()
         except urllib.error.URLError as error:
+            if isinstance(error.reason, ssl.SSLCertVerificationError):
+                raise RuntimeError(
+                    f"TLS certificate verification failed for {router}. "
+                    "After bootstrap/reset, use TF_VAR_ALLOW_INSECURE=true for adoption "
+                    "and the initial Terraform apply that installs managed certificates. "
+                    "Remove the override afterward. For an already commissioned router, "
+                    "check its certificate and hostname."
+                ) from error
             raise RuntimeError(
                 f"Cannot read {router} /{path}: {error.reason}"
             ) from error

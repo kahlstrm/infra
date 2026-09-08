@@ -3,6 +3,8 @@ import importlib.util
 import io
 import json
 import sys
+import ssl
+import urllib.error
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,6 +44,34 @@ def state(bindings):
             ],
         }
     )
+
+
+class BootstrapTlsTest(unittest.TestCase):
+    def manifest(self, insecure=False):
+        return json.dumps({"routers": {"stationary": {
+            "url": "https://router.test", "username": "admin",
+            "password": "test", "insecure": insecure,
+        }}})
+
+    def test_certificate_failure_explains_explicit_bootstrap_override(self):
+        failure = urllib.error.URLError(ssl.SSLCertVerificationError(1, "self-signed"))
+        with patch.object(adopt.urllib.request, "urlopen", side_effect=failure) as request:
+            with self.assertRaisesRegex(RuntimeError, "TF_VAR_ALLOW_INSECURE=true"):
+                adopt.rest_fetch(self.manifest())("stationary", "ip/address")
+        request.assert_called_once()
+        self.assertEqual(request.call_args.kwargs["context"].verify_mode, ssl.CERT_REQUIRED)
+
+    def test_explicit_override_uses_unverified_context(self):
+        with patch.object(adopt.urllib.request, "urlopen") as request:
+            request.return_value.__enter__.return_value.read.return_value = b"[]"
+            self.assertEqual(adopt.rest_fetch(self.manifest(True))("stationary", "ip/address"), "[]")
+        self.assertEqual(request.call_args.kwargs["context"].verify_mode, ssl.CERT_NONE)
+
+    def test_network_failure_does_not_suggest_disabling_tls(self):
+        with patch.object(adopt.urllib.request, "urlopen", side_effect=urllib.error.URLError("refused")):
+            with self.assertRaisesRegex(RuntimeError, "Cannot read stationary /ip/address: refused") as error:
+                adopt.rest_fetch(self.manifest())("stationary", "ip/address")
+        self.assertNotIn("ALLOW_INSECURE", str(error.exception))
 
 
 class FakeTerraform:
