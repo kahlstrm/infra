@@ -33,8 +33,6 @@ The test checks:
   Before any apply, every adopted router resource must have a no-op plan. Only
   creation of the local/uploaded script files is allowed; updates and replacements
   fail the test. After creating those files, the full module plan must be empty.
-- State addresses are moved back to their legacy names, then the production
-  migration declarations restore them without recreating router objects.
 - Both routers are reset again while Terraform state is retained. DNS entries
   are recreated to guarantee changed IDs, and adoption repairs the stale bindings.
   DNS and routed IPv4 management are checked again.
@@ -43,7 +41,7 @@ The lab's normal `terraform/main.tf` only configures providers and disposable
 credentials. It explicitly allows the bootstrap's self-signed certificate, as
 required during real commissioning; installing and checking managed certificates
 belongs to the later networking apply. The harness links the production `bootstrap.tf`, `bootstrap-config.tf`,
-`network-topology.tf`, migration declarations, and module directory into its private
+`network-topology.tf`, and module directory into its private
 Terraform root. There is no copied resource configuration or HCL template substitution.
 The module renders its scripts there, and the test compares them byte-for-byte with
 the checked-in production scripts.

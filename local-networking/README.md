@@ -70,6 +70,10 @@ This network is designed for high performance when docked and graceful reachabil
 
 ## Adopting a bootstrapped router
 
+Existing deployments must move their old resource addresses into the bootstrap
+modules before the first apply of this refactor. Adoption repairs RouterOS IDs;
+it does not migrate Terraform resource addresses.
+
 Bootstrap installs a self-signed HTTPS certificate. Until Terraform installs the
 managed certificates, both the importer and RouterOS providers need the existing
 `ALLOW_INSECURE` override. Run from the repository root:

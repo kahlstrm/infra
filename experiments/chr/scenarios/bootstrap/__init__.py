@@ -286,7 +286,6 @@ class Adoption:
             "bootstrap.tf",
             "bootstrap-config.tf",
             "network-topology.tf",
-            "bootstrap-moves.tf.json",
             "modules",
         ):
             (self.directory / name).symlink_to(
@@ -315,7 +314,7 @@ class Adoption:
             )
         return result.stdout
 
-    def adopt(self, recovery=False, migration=False):
+    def adopt(self, recovery=False):
         command = [
             "python3",
             str(REPO / "local-networking/scripts/adopt-bootstrap.py"),
@@ -347,8 +346,6 @@ class Adoption:
                 )
             if recovery and label == "adopt" and "rebind " not in result.stdout:
                 raise RuntimeError("Reset did not exercise stale binding repair")
-            if migration and label == "adopt" and "move   " not in result.stdout:
-                raise RuntimeError("Legacy state did not exercise address migration")
             if label == "repeat" and "No state changes needed." not in result.stdout:
                 raise RuntimeError("Repeat adoption was not a no-op")
         self.call("plan", "plan", "-out=adopt.tfplan")
@@ -367,19 +364,6 @@ class Adoption:
             "PASS adoption, repeat no-op and empty full bootstrap-module plan",
             flush=True,
         )
-
-    def use_legacy_addresses(self):
-        migrations = run(
-            "jq",
-            "-r",
-            ".moved[] | [.to, .from] | @tsv",
-            str(self.directory / "bootstrap-moves.tf.json"),
-            capture_output=True,
-        ).stdout.splitlines()
-        for index, line in enumerate(migrations):
-            new, old = line.split("\t")
-            self.call(f"legacy-{index}", "state", "mv", new, old)
-
 
 def experiment(parent):
     required = (
@@ -416,8 +400,6 @@ def experiment(parent):
             router.verify()
         adoption = Adoption(root, routers)
         adoption.adopt()
-        adoption.use_legacy_addresses()
-        adoption.adopt(migration=True)
         with ThreadPoolExecutor(max_workers=2) as executor:
             list(executor.map(lambda router: router.reset_bootstrap(), routers))
         for router in routers:

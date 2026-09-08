@@ -160,27 +160,6 @@ def changes_for(bindings, entries, fetch):
     return changes
 
 
-def migrated_entries(entries, declarations, bindings):
-    selected = {binding.address for binding in bindings}
-    migrations = []
-    result = []
-    for entry in entries:
-        address = entry.address
-        for old, new in declarations:
-            if address == old or address.startswith(old + "["):
-                destination = new + address[len(old) :]
-                if destination in selected:
-                    address = destination
-                    migrations.append((entry.address, address))
-                    break
-        result.append(Entry(address, entry.id, entry.provider, entry.type))
-    if len({entry.address for entry in result}) != len(result):
-        raise RuntimeError(
-            "Both old and new resource addresses exist in state; resolve the migration conflict first"
-        )
-    return result, migrations
-
-
 class Terraform:
     def __init__(self, binary, directory):
         self.binary = binary
@@ -212,13 +191,6 @@ class Terraform:
         if result.returncode and "no state file" not in result.stderr.lower():
             raise RuntimeError(f"Cannot read Terraform state: {result.stderr.strip()}")
         return result.stdout.strip() or '{"version":4,"serial":0,"resources":[]}'
-
-    def moves(self):
-        return [
-            move
-            for path in sorted(self.directory.glob("*.tf.json"))
-            for move in rows(path.read_text(), ".moved[]? | [.from, .to]")
-        ]
 
     def manifest(self):
         output = self.call(
@@ -290,11 +262,9 @@ def state_fingerprint(document):
     )
 
 
-def reconcile(terraform, bindings, fetch, apply, backup_root, moves=()):
+def reconcile(terraform, bindings, fetch, apply, backup_root):
     snapshot = terraform.state()
-    entries, migrations = migrated_entries(state_entries(snapshot), moves, bindings)
-    for old, new in migrations:
-        print(f"move   {old} -> {new}")
+    entries = state_entries(snapshot)
     changes = changes_for(bindings, entries, fetch)
     for change in changes:
         print(
@@ -303,7 +273,7 @@ def reconcile(terraform, bindings, fetch, apply, backup_root, moves=()):
     pending = [
         change for change in changes if change.action in ("import", "rebind", "forget")
     ]
-    if not pending and not migrations:
+    if not pending:
         print("No state changes needed.")
         return
     if not apply:
@@ -326,8 +296,6 @@ def reconcile(terraform, bindings, fetch, apply, backup_root, moves=()):
         if change.action in ("rebind", "forget")
     ]
     try:
-        for old, new in migrations:
-            terraform.call("state", "mv", "-lock-timeout=30s", old, new)
         if stale:
             terraform.call("state", "rm", "-lock-timeout=30s", *stale)
         for change in pending:
@@ -413,7 +381,6 @@ def main():
         rest_fetch(manifest),
         args.apply,
         backup_root,
-        terraform.moves(),
     )
 
 
