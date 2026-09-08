@@ -415,7 +415,7 @@ def experiment(parent):
             list(executor.map(lambda router: router.reset_bootstrap(), routers))
         for router in routers:
             router.ssh(
-                ":foreach id in=[/ip dns static find] do={:local n [/ip dns static get $id name]; :local t [/ip dns static get $id type]; :local a [/ip dns static get $id address]; :local d [/ip dns static get $id disabled]; /ip dns static remove $id; /ip dns static add name=$n type=$t address=$a disabled=$d}"
+                ":foreach id in=[/ip dns static find] do={:local n [/ip dns static get $id name]; :local t [/ip dns static get $id type]; :local a [/ip dns static get $id address]; :local d [/ip dns static get $id disabled]; :local c [/ip dns static get $id comment]; /ip dns static remove $id; /ip dns static add name=$n type=$t address=$a disabled=$d comment=$c}"
             )
         adoption.adopt(recovery=True)
         for router in routers:
