@@ -48,14 +48,14 @@ strategy avoids simultaneous writers; upgrades have a brief monitoring gap.
 
 ## Updates
 
-The fork tests and builds images on main changes and rebuilds every Monday at
-05:41 UTC with fresh OS packages. `main` is the discovery tag; Kubernetes uses
+The fork tests and builds images on main changes, version tags and manual
+dispatch. There are no scheduled image rebuilds. `main` is the discovery tag; Kubernetes uses
 its pinned digest. Install/authorize the Renovate GitHub app for kahlstrm/infra
 if it is not already installed. renovate.json scopes updates to this image only
 and leaves merge approval manual. Merging a digest update deploys through Argo CD.
 
 Review upstream changes and merge them into the DOCSight fork separately.
-Weekly image builds do not update application source or pinned Python packages.
+Image rebuilds do not update application source or pinned Python packages.
 
 Changing a secret does not restart the pod automatically. After applying a
 credential rotation through Terraform, restart the deployment so bootstrap can
