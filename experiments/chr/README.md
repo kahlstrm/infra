@@ -1,63 +1,19 @@
 # CHR lab
 
-A local QEMU/RouterOS runner for bootstrap integration tests. It owns image
-caching, disposable credentials, SSH access, disks, and captures. The bootstrap
-scenario owns the test topology and assertions.
-
-## Test bootstrap adoption
+Requires Linux and `/dev/kvm`. Run the two-router bootstrap/adoption test:
 
 ```sh
-nix develop .#chr-bootstrap
-just chr run bootstrap
+nix develop .#chr-bootstrap --command just chr run bootstrap
 ```
 
-Requires Linux with access to `/dev/kvm`. The scenario resets two disposable
-CHRs using the checked-in production bootstrap scripts, adopts their resources,
-then repeats after reset with retained Terraform state. See the
-[scenario README](scenarios/bootstrap/README.md) for coverage and limitations.
+For an interactive router, enter `nix develop .#chr`, then use `just chr start`,
+`ssh`, `stop`, or `fresh`. `fresh` archives the old disk. Select another version
+with `just chr --version 7.23.5 start`; stop the old VM before reusing its SSH port.
 
-## Inspect a standalone router
+State and credentials live under `$XDG_STATE_HOME/chr` (default `~/.local/state/chr`);
+use `--state PATH` to override. Forwarded ports bind only to localhost.
+Nix pins and caches the pristine image via `image.nix`; other versions use a local
+download cache. Keep `images/nix-roots/` while retaining disks backed by Nix images.
 
-```sh
-nix develop .#chr
-just chr start
-just chr ssh
-just chr stop
-```
-
-The default version is RouterOS 7.21.3. `start` reuses its disk; `stop` retains
-it; `fresh` archives the old disk and creates a clean router. Use
-`just chr --version 7.23.5 start` to choose another version, stopping the old
-VM first if its SSH port is in use. SSH defaults to `127.0.0.1:2222`.
-
-The Nix shells provide a pristine CHR image pinned by version and SHA-256 in
-`image.nix`. QEMU uses this read-only Nix store image with a writable overlay.
-The runner registers GC roots under the lab's `images/nix-roots/` directory;
-keep these while retaining disks, including archived disks. Removing the whole
-lab state directory also removes these roots. Versions not provided by the Nix
-shell use the existing download cache.
-
-To update the pinned image, change its version and hash in `image.nix` and the
-runner's default version together. `nix build .#chr-image` downloads, verifies,
-and extracts the image. CI caches the Nix store using a key derived from the
-platform, flake definitions, and image definition, covering tools and CHR without
-caching VM disks or credentials. Relevant pushes to `main` also run the suite
-and populate a cache that subsequent pull requests can restore.
-
-Disks, credentials, fallback downloads, and captures live outside Git under
-`$XDG_STATE_HOME/chr` (default `~/.local/state/chr`). Override this with
-`--state /absolute/path`. State is private and operations on the same directory
-are locked. Keep images with their overlays when moving or backing up the lab.
-
-The runner uses Python's standard library, QEMU, OpenSSH, and curl. Scenarios
-are discovered under `scenarios/<name>/__init__.py` and expose `experiment(lab)`.
-They can use `lab.ssh(command)` and `lab.forward(protocol, local_port, guest_port)`.
-Keep scenario dependencies and configuration out of the shared runner.
-
-Run tests from the `chr-bootstrap` shell. Port tests start small paused QEMU
-processes without CHR disks or KVM; the other tests do not start QEMU:
-
-```sh
-python3 -m unittest discover -s experiments/chr -p 'test_*.py'
-python3 -m unittest discover -s local-networking/scripts -p 'test_*.py'
-```
+See the [bootstrap scenario](scenarios/bootstrap/README.md) for coverage and CI details.
+Add experiments under `scenarios/<name>/__init__.py` with an `experiment(lab)` entry point.
