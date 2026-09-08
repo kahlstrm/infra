@@ -40,7 +40,9 @@ The test checks:
   DNS and routed IPv4 management are checked again.
 
 The lab's normal `terraform/main.tf` only configures providers and disposable
-credentials. The harness links the production `bootstrap.tf`, `bootstrap-config.tf`,
+credentials. It explicitly allows the bootstrap's self-signed certificate, as
+required during real commissioning; installing and checking managed certificates
+belongs to the later networking apply. The harness links the production `bootstrap.tf`, `bootstrap-config.tf`,
 `network-topology.tf`, migration declarations, and module directory into its private
 Terraform root. There is no copied resource configuration or HCL template substitution.
 The module renders its scripts there, and the test compares them byte-for-byte with
@@ -59,7 +61,9 @@ are not patched. `keep-users=yes` retains the disposable admin credentials so
 the harness can inspect the router after reset.
 
 No TAP devices, host routes, physical bridges, or production routers are changed.
-SSH, HTTPS, and DNS forwards and the virtual transit socket bind to localhost.
+QEMU binds SSH, HTTPS, and DNS forwards to kernel-assigned localhost ports;
+the harness reads the assigned ports from QEMU after binding. The transit link
+uses a Unix socket inside the private run directory, with no TCP port allocation.
 Both test VMs stop on completion or failure; disks, captures, serial/bootstrap logs, exports, and Terraform logs/state
 are retained under `$XDG_STATE_HOME/chr/bootstrap/<run>/` (default `~/.local/state`).
 These private evidence directories include disposable credentials and state.

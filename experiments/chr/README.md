@@ -54,7 +54,8 @@ are discovered under `scenarios/<name>/__init__.py` and expose `experiment(lab)`
 They can use `lab.ssh(command)` and `lab.forward(protocol, local_port, guest_port)`.
 Keep scenario dependencies and configuration out of the shared runner.
 
-Run Python tests without starting a VM:
+Run tests from the `chr-bootstrap` shell. Port tests start small paused QEMU
+processes without CHR disks or KVM; the other tests do not start QEMU:
 
 ```sh
 python3 -m unittest discover -s experiments/chr -p 'test_*.py'

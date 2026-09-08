@@ -2,7 +2,6 @@
 
 import os
 import shutil
-import socket
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -30,22 +29,17 @@ def verify_adoption_plan(plan):
         )
 
 
-def port():
-    with socket.socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        return listener.getsockname()[1]
-
 
 class BootstrapLab(Lab):
-    def __init__(self, parent, root, name, transit_port, listen):
+    def __init__(self, parent, root, name, transit_socket, listen):
         self.name = name
-        self.transit_port = transit_port
+        self.transit_socket = transit_socket
         self.listen = listen
         self.address = "10.1.1.1" if name == "stationary" else "10.10.10.1"
         self.prefix = self.address.rsplit(".", 1)[0]
-        self.https_port = port()
+        self.https_port = 0
         super().__init__(
-            SimpleNamespace(version=parent.version, state=root / name, ssh_port=port())
+            SimpleNamespace(version=parent.version, state=root / name, ssh_port=0)
         )
         images = self.root / "images"
         (parent.root / "images").mkdir(exist_ok=True)
@@ -66,8 +60,8 @@ class BootstrapLab(Lab):
                     f"hostfwd=tcp:127.0.0.1:{self.https_port}-{self.address}:443"
                 )
             elif index == 2:
-                mode = "listen" if self.listen else "connect"
-                backend = f"socket,id={ident},{mode}=127.0.0.1:{self.transit_port}"
+                mode = "on" if self.listen else "off"
+                backend = f"stream,id={ident},server={mode},addr.type=unix,addr.path={self.transit_socket}"
             elif index == 8:
                 backend = f"user,id={ident},net=192.0.2.0/24"
             else:
@@ -80,6 +74,25 @@ class BootstrapLab(Lab):
             ]
         args += ["-object", f"filter-dump,id=capture,netdev=lab,file={capture}"]
         return args
+
+    def forwarded_port(self, protocol, guest_port):
+        matches = []
+        for line in self.monitor("info usernet").splitlines():
+            fields = line.split()
+            if (
+                len(fields) == 8
+                and fields[0] == f"{protocol.upper()}[HOST_FORWARD]"
+                and fields[2] == "127.0.0.1"
+                and fields[5] == str(guest_port)
+            ):
+                matches.append(int(fields[3]))
+        if len(matches) != 1:
+            raise RuntimeError(f"Expected one {protocol} forward to guest port {guest_port}: {matches}")
+        return matches[0]
+
+    def network_ready(self):
+        self.ssh_port = self.forwarded_port("tcp", 22)
+        self.https_port = self.forwarded_port("tcp", 443)
 
     def upload(self, path, name):
         args = self.ssh_args()
@@ -148,7 +161,9 @@ class BootstrapLab(Lab):
                     f"{self.name}: RouterOS rejected reset.rsc"
                 ) from error
         self.monitor(f"hostfwd_remove lab tcp:127.0.0.1:{self.ssh_port}")
-        self.monitor(f"hostfwd_add lab tcp:127.0.0.1:{self.ssh_port}-{self.address}:22")
+        self.monitor(f"hostfwd_add lab tcp:127.0.0.1:0-{self.address}:22")
+        self.ssh_port = self.forwarded_port("tcp", 22)
+        (self.directory / "ports").write_text(f"{self.ssh_port}\n")
         time.sleep(10)
         (self.directory / "known_hosts").unlink(missing_ok=True)
         deadline = time.monotonic() + 240
@@ -206,8 +221,8 @@ class BootstrapLab(Lab):
                 address,
                 f"DNS A record for {name}",
             )
-        dns_port = port()
-        self.monitor(f"hostfwd_add lab udp:127.0.0.1:{dns_port}-{self.address}:53")
+        self.monitor(f"hostfwd_add lab udp:127.0.0.1:0-{self.address}:53")
+        dns_port = self.forwarded_port("udp", 53)
         try:
             for name, address in [
                 ("stationary", "10.1.1.1"),
@@ -387,7 +402,7 @@ def experiment(parent):
     root = parent.root / "bootstrap" / str(time.time_ns())
     root.mkdir(parents=True)
     print(f"Bootstrap E2E evidence: {root}", flush=True)
-    transit = port()
+    transit = root / "transit.sock"
     routers = [
         BootstrapLab(parent, root, name, transit, index == 0)
         for index, name in enumerate(("stationary", "kuberack"))

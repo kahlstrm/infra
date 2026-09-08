@@ -1,5 +1,7 @@
 import json
 import os
+import socket
+import time
 import subprocess
 import unittest
 import zipfile
@@ -9,7 +11,73 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from lab import Lab, download
-from scenarios.bootstrap import verify_adoption_plan
+from scenarios.bootstrap import BootstrapLab, verify_adoption_plan
+
+
+class QemuPortTest(unittest.TestCase):
+    def test_qemu_keeps_distinct_ports_bound_for_both_routers(self):
+        with TemporaryDirectory(prefix="chr-ports-") as directory:
+            root = Path(directory)
+            routers = []
+            processes = []
+            try:
+                for index in range(2):
+                    router = BootstrapLab.__new__(BootstrapLab)
+                    router.directory = root / str(index)
+                    router.directory.mkdir()
+                    router.prefix = f"10.{index + 1}.1"
+                    router.address = f"{router.prefix}.1"
+                    router.ssh_port = router.https_port = 0
+                    router.listen = index == 0
+                    router.transit_socket = root / "transit.sock"
+                    router.running = Mock(return_value=True)
+                    process = subprocess.Popen(
+                        ["qemu-system-x86_64", "-S", "-nodefaults", "-m", "64",
+                         "-display", "none", "-monitor",
+                         f"unix:{router.directory / 'monitor.sock'},server=on,wait=off",
+                         *router.network_args(router.directory / "capture.pcap")],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+                    )
+                    processes.append(process)
+                    deadline = time.monotonic() + 10
+                    while not (router.directory / "monitor.sock").exists():
+                        if process.poll() is not None or time.monotonic() > deadline:
+                            self.fail("QEMU did not start its monitor")
+                        time.sleep(0.01)
+                    router.network_ready()
+                    routers.append(router)
+                ports = [port for router in routers for port in (router.ssh_port, router.https_port)]
+                self.assertEqual(len(set(ports)), 4)
+                for port in ports:
+                    self.assertGreater(port, 0)
+                    with socket.socket() as competitor, self.assertRaises(OSError):
+                        competitor.bind(("127.0.0.1", port))
+                router = routers[0]
+                router.monitor(f"hostfwd_remove lab tcp:127.0.0.1:{router.ssh_port}")
+                router.monitor(f"hostfwd_add lab tcp:127.0.0.1:0-{router.address}:22")
+                router.network_ready()
+                self.assertNotIn(router.ssh_port, [routers[1].ssh_port, routers[1].https_port, router.https_port])
+                router.monitor(f"hostfwd_add lab udp:127.0.0.1:0-{router.address}:53")
+                dns_port = router.forwarded_port("udp", 53)
+                with socket.socket(type=socket.SOCK_DGRAM) as competitor, self.assertRaises(OSError):
+                    competitor.bind(("127.0.0.1", dns_port))
+                router.monitor(f"hostfwd_remove lab udp:127.0.0.1:{dns_port}")
+            finally:
+                for process in reversed(processes):
+                    process.terminate()
+                    try:
+                        process.communicate(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.communicate()
+
+    def test_missing_or_ambiguous_forward_is_rejected(self):
+        router = BootstrapLab.__new__(BootstrapLab)
+        row = "TCP[HOST_FORWARD] 8 127.0.0.1 34589 10.0.2.15 22 0 0\n"
+        for output in ("", row + row):
+            router.monitor = Mock(return_value=output)
+            with self.subTest(output=output), self.assertRaisesRegex(RuntimeError, "Expected one"):
+                router.forwarded_port("tcp", 22)
 
 
 class AdoptionPlanTest(unittest.TestCase):

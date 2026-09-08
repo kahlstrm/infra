@@ -256,6 +256,9 @@ class Lab:
             f"filter-dump,id=capture,netdev=lab,file={capture}",
         ]
 
+    def network_ready(self):
+        pass
+
     def start(self):
         if self.running():
             print(f"CHR {self.version} is already running")
@@ -292,6 +295,7 @@ class Lab:
             str(self.directory / "qemu.pid"),
             "-daemonize",
         )
+        self.network_ready()
         (self.directory / "ports").write_text(f"{self.ssh_port}\n")
         if not (self.directory / "configured").exists():
             self.bootstrap()
