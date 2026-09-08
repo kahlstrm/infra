@@ -1,8 +1,11 @@
 # DOCSight
 
-One replica in Talos's monitoring namespace polls the Sagemcom modem every 60
+One replica in Talos's dedicated `docsight` namespace polls the Sagemcom modem every 60
 seconds. SQLite history uses a 2 GiB local-storage PVC with seven-day retention.
-Prometheus scrapes through a ServiceMonitor and retains its existing history.
+Prometheus in `monitoring` discovers the ServiceMonitor and alert rules in
+`docsight` through its existing cross-namespace selectors. Keep the
+`release: observability` labels. The scrape credential stays in `docsight`,
+alongside its ServiceMonitor. Prometheus retains its existing history.
 The local volume binds the workload to its storage node; this is not an HA setup.
 
 The UI is available at **https://docsight.kube.kalski.xyz** through the existing
@@ -13,7 +16,7 @@ Log in with the configured administrator password. The same app service exposes
 For direct troubleshooting access:
 
 ```sh
-kubectl --context admin@klusse -n monitoring port-forward deployment/docsight 8765:8765
+kubectl --context admin@klusse -n docsight port-forward deployment/docsight 8765:8765
 ```
 
 The current Flannel CNI does not enforce NetworkPolicy. Internal cluster clients
@@ -32,7 +35,7 @@ for an enforcing CNI. This deployment creates no public ingress.
    beginning with `dsk_`, at least 48 characters long. The existing
    `cable_modem.username` and `cable_modem.password` provide modem access.
 3. Review and apply the local-talos Terraform plan to create docsight-credentials
-   in monitoring. Secrets are managed through Terraform, not kubectl.
+   in docsight. Terraform also owns this namespace. Secrets are managed through Terraform, not kubectl.
 4. Verify the digest in kustomization.yaml is published and pullable. Merge the
    infra PR; the existing apps root application discovers docsight.yaml and
    Argo CD automatically syncs it.
@@ -59,7 +62,7 @@ credential rotation through Terraform, restart the deployment so bootstrap can
 update the managed token hash:
 
 ```sh
-kubectl --context admin@klusse -n monitoring rollout restart deployment/docsight
+kubectl --context admin@klusse -n docsight rollout restart deployment/docsight
 ```
 
 For rollback, revert the image-digest commit. Preserve a copy of the data volume

@@ -245,11 +245,19 @@ resource "kubernetes_secret" "opencode_credentials" {
   }
 }
 
+resource "kubernetes_namespace" "docsight" {
+  depends_on = [talos_cluster_kubeconfig.this]
+
+  metadata {
+    name = "docsight"
+  }
+}
+
 resource "kubernetes_secret" "docsight_credentials" {
-  depends_on = [kubernetes_namespace.monitoring]
+  depends_on = [kubernetes_namespace.docsight]
   metadata {
     name      = "docsight-credentials"
-    namespace = "monitoring"
+    namespace = kubernetes_namespace.docsight.metadata[0].name
   }
   data = {
     MODEM_USER            = local.config["cable_modem"]["username"]

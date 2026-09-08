@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels:
     release: observability
 spec:

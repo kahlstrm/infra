@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels:
     app: docsight
   annotations:
@@ -19,7 +19,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels: &id001
     app: docsight
 spec:
@@ -142,7 +142,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels: &id001
     app: docsight
 spec:
@@ -156,7 +156,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels:
     release: observability
 spec:
@@ -178,7 +178,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: docsight
-  namespace: monitoring
+  namespace: docsight
   labels: &id001
     app: docsight
 spec:
@@ -189,7 +189,10 @@ spec:
   - Egress
   ingress:
   - from:
-    - podSelector:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+      podSelector:
         matchLabels:
           app.kubernetes.io/name: prometheus
     - namespaceSelector:

@@ -11,10 +11,8 @@ spec:
     path: local-kubernetes/manifests/docsight
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: docsight
   syncPolicy:
-    syncOptions:
-    - CreateNamespace=true
     automated:
       prune: true
       selfHeal: true
