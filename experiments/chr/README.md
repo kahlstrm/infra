@@ -41,7 +41,8 @@ To update the pinned image, change its version and hash in `image.nix` and the
 runner's default version together. `nix build .#chr-image` downloads, verifies,
 and extracts the image. CI caches the Nix store using a key derived from the
 platform, flake definitions, and image definition, covering tools and CHR without
-caching VM disks or credentials.
+caching VM disks or credentials. Relevant pushes to `main` also run the suite
+and populate a cache that subsequent pull requests can restore.
 
 Disks, credentials, fallback downloads, and captures live outside Git under
 `$XDG_STATE_HOME/chr` (default `~/.local/state/chr`). Override this with

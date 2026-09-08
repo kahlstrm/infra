@@ -2,6 +2,15 @@ name: Network bootstrap
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - local-networking/**
+      - experiments/chr/**
+      - flake.nix
+      - justfile
+      - flake.lock
+      - .github/workflows/network-bootstrap.yml
   pull_request:
     paths:
       - local-networking/**
