@@ -30,7 +30,9 @@ The test checks:
   as the source, exercising the transit link and return routes.
 - The production adoption command imports the management addresses, peer route,
   A records into the real bootstrap modules. A repeated adoption changes nothing.
-  A full bootstrap-module apply leaves an empty subsequent plan.
+  Before any apply, every adopted router resource must have a no-op plan. Only
+  creation of the local/uploaded script files is allowed; updates and replacements
+  fail the test. After creating those files, the full module plan must be empty.
 - State addresses are moved back to their legacy names, then the production
   migration declarations restore them without recreating router objects.
 - Both routers are reset again while Terraform state is retained. DNS entries

@@ -14,6 +14,22 @@ from lab import SOURCE, Lab, run
 REPO = SOURCE.parents[1]
 
 
+def verify_adoption_plan(plan):
+    unexpected = run(
+        "jq",
+        "-r",
+        '.resource_changes[] | select(.change.actions != ["no-op"]) | '
+        'select(((.type == "local_file" or .type == "routeros_file") and '
+        '.name == "script" and .change.actions == ["create"]) | not) | .address',
+        input=plan,
+        capture_output=True,
+    ).stdout.strip()
+    if unexpected:
+        raise RuntimeError(
+            f"Bootstrap differs from Terraform before apply:\n{unexpected}"
+        )
+
+
 def port():
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -322,13 +338,7 @@ class Adoption:
                 raise RuntimeError("Repeat adoption was not a no-op")
         self.call("plan", "plan", "-out=adopt.tfplan")
         plan = self.call("show", "show", "-json", "adopt.tfplan")
-        run(
-            "jq",
-            "-e",
-            'all(.resource_changes[]; (.change.actions | index("delete") | not) and (.type == "routeros_file" or .type == "local_file" or (.change.actions | index("create") | not)))',
-            input=plan,
-            capture_output=True,
-        )
+        verify_adoption_plan(plan)
         self.call("apply", "apply", "adopt.tfplan")
         self.call("settled", "plan", "-detailed-exitcode")
         for site in ("stationary", "kuberack"):

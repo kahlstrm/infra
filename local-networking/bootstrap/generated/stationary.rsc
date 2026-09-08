@@ -110,7 +110,7 @@
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
-/ip route add dst-address=10.10.10.0/24 gateway=10.254.254.1 distance=1 check-gateway=ping
+/ip route add dst-address=10.10.10.0/24 gateway=10.254.254.1 distance=1 check-gateway=ping comment="Primary route to kuberack LAN via transit link"
 /ipv6 route add dst-address=fd00:de:ad:10::1/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to kuberack for management"
 #
 # --- System Services ---

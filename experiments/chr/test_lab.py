@@ -1,3 +1,4 @@
+import json
 import subprocess
 import unittest
 import zipfile
@@ -7,6 +8,43 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from lab import Lab, download
+from scenarios.bootstrap import verify_adoption_plan
+
+
+class AdoptionPlanTest(unittest.TestCase):
+    def plan(self, resource_type, actions, name="management"):
+        return json.dumps({
+            "resource_changes": [{
+                "address": f"module.bootstrap_stationary.{resource_type}.{name}",
+                "type": resource_type,
+                "name": name,
+                "change": {"actions": actions},
+            }]
+        })
+
+    def test_accepts_unchanged_router_settings(self):
+        verify_adoption_plan(self.plan("routeros_ip_address", ["no-op"]))
+
+    def test_rejects_router_drift_before_apply(self):
+        for actions in (["update"], ["create"], ["delete"], ["delete", "create"]):
+            with self.subTest(actions=actions), self.assertRaisesRegex(
+                RuntimeError, "routeros_ip_address.management"
+            ):
+                verify_adoption_plan(self.plan("routeros_ip_address", actions))
+
+    def test_only_allows_script_file_creation(self):
+        for resource_type in ("local_file", "routeros_file"):
+            verify_adoption_plan(self.plan(resource_type, ["create"], "script"))
+            for actions, name in (
+                (["update"], "script"),
+                (["delete", "create"], "script"),
+                (["create"], "other"),
+            ):
+                with (
+                    self.subTest(resource_type=resource_type, actions=actions, name=name),
+                    self.assertRaises(RuntimeError),
+                ):
+                    verify_adoption_plan(self.plan(resource_type, actions, name))
 
 
 class DownloadTest(unittest.TestCase):

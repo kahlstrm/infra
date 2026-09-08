@@ -17,13 +17,16 @@ variable "output_directory" {
 
 locals {
   script = templatefile("${path.module}/bootstrap.tftpl.rsc", merge(var.config, {
+    management_routes  = values(local.routes)
     local_bridge_ports = join("; ", formatlist("\"%s\"", var.config.local_bridge_ports))
   }))
   addresses = {
     lan     = { address = var.config.local_ipv4_address, interface = var.config.local_bridge_name }
     transit = { address = var.config.transit_ipv4_address, interface = var.config.transit_interface }
   }
-  routes  = { for route in var.config.management_routes : route.peer => route }
+  routes = { for route in var.config.management_routes : route.peer => merge(route, {
+    ipv4_comment = "Primary route to ${route.peer} LAN via transit link"
+  }) }
   records = var.config.all_router_dns_records
 }
 
@@ -49,7 +52,7 @@ resource "routeros_ip_route" "peer" {
   gateway       = each.value.ipv4_gateway
   check_gateway = "ping"
   distance      = 1
-  comment       = "Primary route to ${each.key} LAN via transit link"
+  comment       = each.value.ipv4_comment
 }
 
 resource "routeros_ip_dns_record" "a" {

@@ -116,7 +116,7 @@
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
 %{ for route in management_routes ~}
-/ip route add dst-address=${route.ipv4_destination} gateway=${route.ipv4_gateway} distance=1 check-gateway=ping
+/ip route add dst-address=${route.ipv4_destination} gateway=${route.ipv4_gateway} distance=1 check-gateway=ping comment="${route.ipv4_comment}"
 /ipv6 route add dst-address=${route.ipv6_destination} gateway=${route.ipv6_gateway} distance=${route.distance} comment="bootstrap: ${route.comment}"
 %{ endfor ~}
 %{ endif ~}
