@@ -42,7 +42,7 @@ def download(url, destination, member):
     for attempt in range(3):
         try:
             run(
-                "curl", "-fsSL", "--connect-timeout", "15", "--max-time", "120",
+                "curl", "-fsSL", "--connect-timeout", "15", "--max-time", "300",
                 url, "-o", str(temporary),
             )
             validate_archive(temporary, member)
