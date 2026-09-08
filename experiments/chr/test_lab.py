@@ -1,10 +1,82 @@
+import subprocess
 import unittest
+import zipfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from lab import Lab
+from lab import Lab, download
+
+
+class DownloadTest(unittest.TestCase):
+    def setUp(self):
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.destination = Path(directory.name) / "chr.img.zip"
+        self.member = "chr.img"
+        sleep = patch("lab.time.sleep")
+        sleep.start()
+        self.addCleanup(sleep.stop)
+
+    def valid_download(self, *args):
+        with zipfile.ZipFile(args[-1], "w") as archive:
+            archive.writestr(self.member, b"router image")
+
+    def test_retries_interrupted_transfer_without_caching_partial_file(self):
+        def transfer(*args):
+            if command.call_count == 1:
+                Path(args[-1]).write_bytes(b"partial")
+                raise subprocess.CalledProcessError(56, args)
+            self.assertFalse(Path(args[-1]).exists())
+            self.valid_download(*args)
+
+        with patch("lab.run", side_effect=transfer) as command:
+            download("https://example.test/chr.zip", self.destination, self.member)
+        self.assertEqual(command.call_count, 2)
+        with zipfile.ZipFile(self.destination) as archive:
+            self.assertEqual(archive.read(self.member), b"router image")
+
+    def test_retries_invalid_content_even_when_curl_succeeds(self):
+        def transfer(*args):
+            if command.call_count == 1:
+                Path(args[-1]).write_bytes(b"not a zip")
+            else:
+                self.valid_download(*args)
+
+        with patch("lab.run", side_effect=transfer) as command:
+            download("https://example.test/chr.zip", self.destination, self.member)
+        self.assertEqual(command.call_count, 2)
+
+    def test_replaces_invalid_cache_and_reuses_valid_cache(self):
+        self.destination.write_bytes(b"broken cache")
+        with patch("lab.run", side_effect=self.valid_download) as command:
+            download("https://example.test/chr.zip", self.destination, self.member)
+            download("https://example.test/chr.zip", self.destination, self.member)
+        command.assert_called_once()
+
+    def test_wrong_archive_member_exhausts_retries_without_cached_files(self):
+        def transfer(*args):
+            with zipfile.ZipFile(args[-1], "w") as archive:
+                archive.writestr("wrong.img", b"wrong image")
+
+        with patch("lab.run", side_effect=transfer) as command:
+            with self.assertRaisesRegex(RuntimeError, "valid CHR image"):
+                download("https://example.test/chr.zip", self.destination, self.member)
+        self.assertEqual(command.call_count, 3)
+        self.assertEqual(list(self.destination.parent.iterdir()), [])
+
+    def test_failed_extraction_does_not_leave_an_image(self):
+        lab = Lab(SimpleNamespace(version="test", state=self.destination.parent, ssh_port=2222))
+        with patch("lab.download") as fetch, patch("lab.run") as command:
+            fetch.side_effect = lambda url, path, member: self.valid_download(str(path))
+            self.member = "chr-test.img"
+            with patch("lab.shutil.copyfileobj", side_effect=OSError("disk full")):
+                with self.assertRaisesRegex(OSError, "disk full"):
+                    lab.prepare()
+        command.assert_not_called()
+        self.assertFalse((lab.root / "images/chr-test.img").exists())
+        self.assertFalse((lab.root / "images/chr-test.img.part").exists())
 
 
 class BootstrapConsoleTest(unittest.TestCase):

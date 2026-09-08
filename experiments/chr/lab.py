@@ -25,12 +25,36 @@ def run(*args, **kwargs):
     return subprocess.run(args, check=True, text=True, **kwargs)
 
 
-def download(url, destination):
+def validate_archive(path, member):
+    with zipfile.ZipFile(path) as archive:
+        if member not in archive.namelist() or archive.testzip() is not None:
+            raise zipfile.BadZipFile(f"Invalid CHR image archive: {path}")
+
+
+def download(url, destination, member):
     if destination.exists():
-        return
+        try:
+            validate_archive(destination, member)
+            return
+        except zipfile.BadZipFile:
+            destination.unlink()
     temporary = destination.with_suffix(destination.suffix + ".part")
-    run("curl", "-fsSL", "--retry", "2", url, "-o", str(temporary))
-    temporary.replace(destination)
+    for attempt in range(3):
+        try:
+            run(
+                "curl", "-fsSL", "--connect-timeout", "15", "--max-time", "120",
+                url, "-o", str(temporary),
+            )
+            validate_archive(temporary, member)
+            temporary.replace(destination)
+            return
+        except (subprocess.CalledProcessError, zipfile.BadZipFile) as error:
+            if attempt == 2:
+                raise RuntimeError(f"Failed to download a valid CHR image: {url}") from error
+            print(f"CHR image download failed; retrying ({attempt + 1}/2)", file=sys.stderr)
+            time.sleep(attempt + 1)
+        finally:
+            temporary.unlink(missing_ok=True)
 
 
 class Lab:
@@ -101,15 +125,21 @@ class Lab:
         download(
             f"https://download.mikrotik.com/routeros/{self.version}/{archive.name}",
             archive,
+            image.name,
         )
         if not image.exists():
-            with (
-                zipfile.ZipFile(archive) as zipped,
-                zipped.open(image.name) as source,
-                image.open("wb") as target,
-            ):
-                shutil.copyfileobj(source, target)
-            image.chmod(0o400)
+            temporary = image.with_suffix(image.suffix + ".part")
+            try:
+                with (
+                    zipfile.ZipFile(archive) as zipped,
+                    zipped.open(image.name) as source,
+                    temporary.open("wb") as target,
+                ):
+                    shutil.copyfileobj(source, target)
+                temporary.chmod(0o400)
+                temporary.replace(image)
+            finally:
+                temporary.unlink(missing_ok=True)
         if not self.disk.exists():
             run(
                 "qemu-img",
