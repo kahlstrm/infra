@@ -22,9 +22,26 @@ cd local-talos && terraform init && terraform plan && terraform apply
 cd hetzner-infra && terraform init && terraform plan && terraform apply
 ```
 
-Target specific modules: `terraform apply -target=module.stationary` or `terraform apply -target=module.kuberack`
+Site-specific applies must include the matching bootstrap module, e.g.
+`terraform apply -target=module.stationary -target=module.bootstrap_stationary`
+(use `kuberack` for both targets at that site).
 
 Format all HCL: `terraform fmt -recursive`
+
+## Bootstrap and CHR tests
+
+Bootstrap changes must regenerate and review `local-networking/bootstrap/generated/*.rsc`.
+Run the isolated two-router test on Linux with `/dev/kvm`:
+
+```sh
+nix develop .#chr-bootstrap --command just chr run bootstrap
+```
+
+Keep scenarios under `experiments/chr/scenarios/`; see the [lab README](experiments/chr/README.md).
+After bootstrap/reset, preview `just adopt-bootstrap --router stationary` (or `kuberack`);
+add `--apply` to reconcile state, then review a Terraform plan. Use
+`TF_VAR_ALLOW_INSECURE=true` until managed certificates are installed, and avoid
+concurrent state writes. See [commissioning](local-networking/README.md#adopting-a-bootstrapped-router).
 
 ## Secret Management
 
@@ -101,7 +118,8 @@ local-kubernetes/
 - `modules/rb5009/` - Shared RB5009 router configuration
 - `modules/dhcp/`, `modules/dns/`, `modules/cert/` - Network services
 - `modules/zerotier/` - VPN site-to-site connectivity
-- `bootstrap/` - RouterOS bootstrap templates; `bootstrap/generated/` - generated `.rsc` scripts
+- `modules/bootstrap/` - Bootstrap script, Terraform resources, and adoption metadata
+- `bootstrap/generated/` - Generated `.rsc` commissioning scripts
 
 **local-talos:** Bootstraps Talos cluster using Siderolabs provider. Consumes networking outputs for node IPs/hostnames.
 

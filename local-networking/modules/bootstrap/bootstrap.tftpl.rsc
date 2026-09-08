@@ -86,6 +86,7 @@
   }
 
   # --- IP Setup for Local LAN ---
+  /ip address add address=${local_ipv4_address} interface=$localBridgeName;
   /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
   /ipv6 nd prefix default set autonomous=yes;
   /ipv6 nd disable [find default]
@@ -100,11 +101,13 @@
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
 %{ for name, ips in all_router_dns_records ~}
+/ip dns static add name="${name}" address=${ips.ip} type=A
 /ip dns static add name="${name}" address=${ips.ipv6} type=AAAA comment="bootstrap"
 %{ endfor ~}
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={
+  /ip address add address=${transit_ipv4_address} interface=$transitInterface;
   /ipv6 address add address="$transitIpv6AddressNetwork" interface=$transitInterface comment="bootstrap: transit link";
   /interface list member add list=LAN interface=$transitInterface comment="bootstrap";
 }
@@ -113,6 +116,7 @@
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
 %{ for route in management_routes ~}
+/ip route add dst-address=${route.ipv4_destination} gateway=${route.ipv4_gateway} distance=1 check-gateway=ping comment="${route.ipv4_comment}"
 /ipv6 route add dst-address=${route.ipv6_destination} gateway=${route.ipv6_gateway} distance=${route.distance} comment="bootstrap: ${route.comment}"
 %{ endfor ~}
 %{ endif ~}
@@ -139,8 +143,7 @@
 # The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
 # Creating them here would leave Terraform unable to manage them without a per-device
 # import, since this script only ever runs once at provisioning.
-# Trust built-in root CAs (RouterOS >=7.19) so DoH/adlist HTTPS verification works
-/certificate/settings set builtin-trust-anchors=trusted
+/certificate/settings set builtin-trust-store=all
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
@@ -194,9 +197,6 @@
   filter add chain=forward action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
 }
 
-:log info bootstrap_script_finished;
-:set bootstrapMode;
-
 /certificate {
   add name=ca common-name=local_ca key-usage=key-cert-sign
   add name=self common-name=localhost
@@ -227,7 +227,7 @@
   :log info "ZeroTier package is already installed and enabled.";
 } else={
   :log info "ZeroTier package not found or is disabled; attempting to install.";
-  /system package update check-for-updates duration=10s;
+  /system package update check-for-updates;
   :delay 5s;
   :if ([/system package print count-only where name="zerotier"] > 0) do={
       :log info "Found ZeroTier package, enabling it now.";
@@ -235,11 +235,14 @@
       :log info "Rebooting to apply package changes.";
       /log/print file=boostrap.txt
       :execute script="/system package apply-changes"
-      :delay 1s; ;quit;
+      :delay 1s; /quit;
   } else={
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }%{ endif }
+# All bootstrap steps completed; the integration test checks this after reboot.
+:log info bootstrap_script_finished;
+:set bootstrapMode;
 # reboot for ipv6 accept-router-advertisement setting to be enabled
 :log info "Rebooting for ipv6 accept-router-advertisement change"
 /log/print file=boostrap.txt

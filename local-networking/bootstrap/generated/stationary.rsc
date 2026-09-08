@@ -82,6 +82,7 @@
   }
 
   # --- IP Setup for Local LAN ---
+  /ip address add address=10.1.1.1/24 interface=$localBridgeName;
   /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
   /ipv6 nd prefix default set autonomous=yes;
   /ipv6 nd disable [find default]
@@ -95,17 +96,21 @@
 
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
+/ip dns static add name="kuberack.networking.kalski.xyz" address=10.10.10.1 type=A
 /ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary.networking.kalski.xyz" address=10.1.1.1 type=A
 /ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::1 type=AAAA comment="bootstrap"
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={
+  /ip address add address=10.254.254.2/30 interface=$transitInterface;
   /ipv6 address add address="$transitIpv6AddressNetwork" interface=$transitInterface comment="bootstrap: transit link";
   /interface list member add list=LAN interface=$transitInterface comment="bootstrap";
 }
 
 # --- Management Routes ---
 # Routes to reach other routers' management networks during bootstrap
+/ip route add dst-address=10.10.10.0/24 gateway=10.254.254.1 distance=1 check-gateway=ping comment="Primary route to kuberack LAN via transit link"
 /ipv6 route add dst-address=fd00:de:ad:10::1/64 gateway=fd00:de:ad:ff::1 distance=255 comment="bootstrap: route to kuberack for management"
 #
 # --- System Services ---
@@ -130,8 +135,7 @@
 # The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
 # Creating them here would leave Terraform unable to manage them without a per-device
 # import, since this script only ever runs once at provisioning.
-# Trust built-in root CAs (RouterOS >=7.19) so DoH/adlist HTTPS verification works
-/certificate/settings set builtin-trust-anchors=trusted
+/certificate/settings set builtin-trust-store=all
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
 /ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
@@ -185,9 +189,6 @@
   filter add chain=forward action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
 }
 
-:log info bootstrap_script_finished;
-:set bootstrapMode;
-
 /certificate {
   add name=ca common-name=local_ca key-usage=key-cert-sign
   add name=self common-name=localhost
@@ -218,7 +219,7 @@
   :log info "ZeroTier package is already installed and enabled.";
 } else={
   :log info "ZeroTier package not found or is disabled; attempting to install.";
-  /system package update check-for-updates duration=10s;
+  /system package update check-for-updates;
   :delay 5s;
   :if ([/system package print count-only where name="zerotier"] > 0) do={
       :log info "Found ZeroTier package, enabling it now.";
@@ -226,11 +227,14 @@
       :log info "Rebooting to apply package changes.";
       /log/print file=boostrap.txt
       :execute script="/system package apply-changes"
-      :delay 1s; ;quit;
+      :delay 1s; /quit;
   } else={
       :log warning "Could not find ZeroTier package after checking for updates.";
   }
 }
+# All bootstrap steps completed; the integration test checks this after reboot.
+:log info bootstrap_script_finished;
+:set bootstrapMode;
 # reboot for ipv6 accept-router-advertisement setting to be enabled
 :log info "Rebooting for ipv6 accept-router-advertisement change"
 /log/print file=boostrap.txt

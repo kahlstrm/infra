@@ -6,6 +6,7 @@ pkgs.mkShellNoCC {
   nativeBuildInputs = with pkgs; [
     google-cloud-sdk
     opentofu
+    python3
     jq
     vim
     just
