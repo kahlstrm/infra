@@ -85,7 +85,8 @@ output "adoption" {
       path     = "file"
       match    = { name = "${var.config.system_identity}.rsc" }
       optional = true
-    }]
+    }],
+    local.ipv6_adoption
   )
 }
 

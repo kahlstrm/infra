@@ -28,8 +28,11 @@ The test checks:
   from outside the router.
 - Each router can reach the other router's LAN address with its own LAN address
   as the source, exercising the transit link and return routes.
-- The production adoption command imports the management addresses, peer route,
-  A records into the real bootstrap modules. A repeated adoption changes nothing.
+- IPv6 is disabled globally, LAN advertisements are disabled, and router AAAA
+  records stay disabled before and after adoption and reset recovery.
+- The production adoption command imports management addresses, peer routes,
+  A/AAAA records, IPv6 settings, and LAN advertisements into the bootstrap modules.
+  A repeated adoption changes nothing.
   Before any apply, every adopted router resource must have a no-op plan. Only
   creation of the local/uploaded script files is allowed; updates and replacements
   fail the test. After creating those files, the full module plan must be empty.
@@ -47,7 +50,7 @@ The module renders its scripts there, and the test compares them byte-for-byte w
 the checked-in production scripts.
 
 The adoption fixture covers bootstrap handoff, not the entire networking layer
-(GCP secrets, ACME, ZeroTier, DHCP leases, CAKE, and monitoring). IPv6 shutdown assertions are added by the dependent IPv6 change.
+(GCP secrets, ACME, ZeroTier, DHCP leases, CAKE, and monitoring). The assertions target `enable_ipv6=false`, matching the production site configuration.
 Internet IPv6/prefix delegation is not simulated here.
 
 ## Hardware adaptation and isolation
@@ -100,4 +103,3 @@ firewall traffic and transit failure/recovery. IPv6 on/off transitions need
 client-side address, route, DNS, and connectivity checks. ZeroTier integration
 and physical RB5009 commissioning remain separate tests. These are planned
 coverage, not assertions implemented by this bootstrap scenario.
-

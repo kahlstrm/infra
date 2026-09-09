@@ -29,7 +29,7 @@ locals {
     enable_cake       = true
     # DNA's CMTS advertises itself as our v6 router and delegates a /56, but never
     # answers Neighbor Solicitations for that gateway, so IPv6 cannot leave the CPE.
-    # Keep this false until the ISP fixes it, so clients are not handed dead IPv6.
+    # Disable all IPv6 until the ISP fixes it.
     enable_ipv6      = false
     ipv6_prefix_hint = "::/56"
     # The ISP's first hop is added automatically from the routing table; loss there but
@@ -68,12 +68,14 @@ locals {
   }
   all_router_dns_records = {
     "stationary.networking.kalski.xyz" = {
-      ip   = local.stationary.ip
-      ipv6 = local.stationary.ipv6
+      ip          = local.stationary.ip
+      ipv6        = local.stationary.ipv6
+      enable_ipv6 = local.stationary.enable_ipv6
     },
     "kuberack.networking.kalski.xyz" = {
-      ip   = local.kuberack.ip
-      ipv6 = local.kuberack.ipv6
+      ip          = local.kuberack.ip
+      ipv6        = local.kuberack.ipv6
+      enable_ipv6 = local.kuberack.enable_ipv6
     }
   }
 }

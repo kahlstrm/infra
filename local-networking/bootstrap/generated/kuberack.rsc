@@ -86,7 +86,8 @@
   /ipv6 address add address=$localIpv6Address interface=$localBridgeName advertise=yes comment="bootstrap";
   /ipv6 nd prefix default set autonomous=yes;
   /ipv6 nd disable [find default]
-  /ipv6 nd add interface=$localBridgeName advertise-dns=yes dns=$localIpv6Host managed-address-configuration=no other-configuration=no
+  # Terraform adopts this entry; keep advertisements off when IPv6 is disabled.
+  /ipv6 nd add interface=$localBridgeName advertise-dns=no dns="" managed-address-configuration=no other-configuration=no disabled=yes ra-lifetime=none
 
   /interface list member add list=LAN interface=$localBridgeName comment="bootstrap";
 
@@ -97,9 +98,9 @@
 # --- Static DNS Records for All Routers ---
 # Add records for all managed routers to solve provider DNS resolution.
 /ip dns static add name="kuberack.networking.kalski.xyz" address=10.10.10.1 type=A
-/ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA comment="bootstrap"
+/ip dns static add name="kuberack.networking.kalski.xyz" address=fd00:de:ad:10::1 type=AAAA disabled=yes comment="bootstrap"
 /ip dns static add name="stationary.networking.kalski.xyz" address=10.1.1.1 type=A
-/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::1 type=AAAA comment="bootstrap"
+/ip dns static add name="stationary.networking.kalski.xyz" address=fd00:de:ad:1::1 type=AAAA disabled=yes comment="bootstrap"
 
 # --- Transit Link Setup ---
 :if ($transitInterface != "") do={
@@ -131,7 +132,7 @@
 # first terraform init. Terraform adds the IPv6 resolvers when enable_ipv6 is set.
 /ip dns set allow-remote-requests=yes servers=1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4
 /ip dhcp-client add interface=$wanInterface disabled=no use-peer-dns=no comment="bootstrap"
-/ipv6 settings set accept-router-advertisements=yes forward=yes
+/ipv6 settings set disable-ipv6=yes accept-router-advertisements=no forward=no
 # The WAN prefix delegation and the LAN address taken from it are owned by modules/ipv6.
 # Creating them here would leave Terraform unable to manage them without a per-device
 # import, since this script only ever runs once at provisioning.

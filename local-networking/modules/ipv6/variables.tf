@@ -4,7 +4,7 @@ variable "wan_interface" {
 }
 
 variable "enable_ipv6" {
-  description = "Request a prefix from the ISP. Set false to stop handing routable IPv6 to LAN clients while upstream IPv6 is broken; ULA addressing and inter-site routing are unaffected."
+  description = "Enable IPv6 globally, including local addressing, WAN prefix delegation, router advertisements, and IPv6 DNS."
   type        = bool
 }
 

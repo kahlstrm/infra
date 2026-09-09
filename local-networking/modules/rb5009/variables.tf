@@ -44,7 +44,7 @@ variable "enable_cake" {
 }
 
 variable "enable_ipv6" {
-  description = "Request an IPv6 prefix from the ISP and use IPv6 DNS resolvers. Set false while upstream IPv6 is broken."
+  description = "Enable IPv6 globally, including local addressing, WAN prefix delegation, router advertisements, and IPv6 DNS."
   type        = bool
   default     = true
 }
