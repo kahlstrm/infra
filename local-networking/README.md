@@ -112,21 +112,13 @@ It binds the existing management IPv4 addresses, peer IPv4 routes, router DNS
 records, global IPv6 settings, and LAN advertisements to the per-router bootstrap
 modules in Terraform state. Terraform then manages these objects on subsequent applies.
 
-`enable_ipv6=false` disables the entire IPv6 stack, forwarding, WAN prefix
-delegation, LAN advertisements, and router AAAA records, including local IPv6
-between sites. With this configuration, enable IPv6 only when upstream IPv6
-works: the advertised default route otherwise sends clients toward an unusable
-Internet path. Keeping local IPv6 without that default route would require
-explicit client routes to the other site's IPv6 subnet, which we do not configure.
+`enable_ipv6=false` disables all IPv6, including local routing, advertisements,
+and router AAAA records. Enable it only with working upstream IPv6: local-only
+IPv6 would need explicit client routes instead of the advertised default route.
 
-On existing routers, preview and apply bootstrap adoption before planning this
-change. After reviewing and applying the Terraform plan, **reboot each affected
-router** with `/system reboot`, one at a time, and verify IPv4 management before
-continuing. RouterOS requires a reboot for changed
-[global IPv6 settings](https://help.mikrotik.com/docs/spaces/ROS/pages/103841817/IP%20Settings)
-to take full effect. Terraform does not reboot routers automatically. Confirm
-`/ipv6 settings print` shows `disable-ipv6=yes` and `/ipv6 nd print` has no enabled
-entries. Reconnect clients that retain old IPv6 routes or DNS settings.
+For existing routers: adopt first, review/apply Terraform, then **reboot each
+router** (`/system reboot`) and verify IPv4 access. Terraform does not reboot them.
+Reconnect clients that retain old IPv6 routes or DNS settings.
 
 **Terraform apply (ongoing)**
 
