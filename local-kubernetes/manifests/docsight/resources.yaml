@@ -71,6 +71,9 @@ spec:
         - &id003
           secretRef:
             name: docsight-credentials
+        - &modemCredentials
+          secretRef:
+            name: docsight-modem-credentials
         securityContext: &id006
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -104,6 +107,7 @@ spec:
         env: *id002
         envFrom:
         - *id003
+        - *modemCredentials
         volumeMounts:
         - *id004
         - *id005
