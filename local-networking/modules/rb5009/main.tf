@@ -24,8 +24,7 @@ module "dns" {
   use_ipv6_dns = var.enable_ipv6
 }
 
-# The ISP's first hop is DHCP-assigned, so read it from the routing table rather than
-# pinning a literal that silently rots when the lease changes.
+# Read the default gateway from the routing table; it may be another local router.
 data "routeros_ip_routes" "default" {
   filter = {
     dst_address = "0.0.0.0/0"
@@ -36,7 +35,7 @@ module "netwatch" {
   source = "../netwatch"
   targets = merge(
     var.netwatch_targets,
-    try({ "isp-gateway" = data.routeros_ip_routes.default.routes[0].gateway }, {}),
+    try({ "default-gateway" = data.routeros_ip_routes.default.routes[0].gateway }, {}),
   )
 }
 

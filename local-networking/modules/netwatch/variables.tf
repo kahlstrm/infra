@@ -1,5 +1,5 @@
 variable "targets" {
-  description = "ICMP probe targets keyed by probe name. Probing a mix of the ISP's first hop and independent public resolvers is what separates access-link loss from loss further out."
+  description = "ICMP probe targets keyed by probe name. Compare the default gateway with independent public resolvers to help locate loss along the path."
   type        = map(string)
 }
 
