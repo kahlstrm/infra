@@ -16,6 +16,7 @@ spec:
         - alert: WanPacketLoss
           expr: |
             avg_over_time(mktxp_netwatch_icmp_loss_percent[10m]) > 2
+            and mktxp_netwatch_icmp_loss_percent
           for: 2m
           labels:
             severity: warning
@@ -28,6 +29,7 @@ spec:
         - alert: WanPacketLossCritical
           expr: |
             avg_over_time(mktxp_netwatch_icmp_loss_percent[5m]) > 10
+            and mktxp_netwatch_icmp_loss_percent
           for: 2m
           labels:
             severity: critical

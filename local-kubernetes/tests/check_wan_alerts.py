@@ -75,6 +75,9 @@ def main():
                 scenario("sustained severe loss", [20] * 61, warning=True, critical=True),
                 scenario("recovery", [20] * 21 + [0] * 60, eval_time="25m"),
                 scenario("absent probe", ["_"] * 61),
+                scenario("stale batch cannot trigger warning", [0] * 20 + [20, "stale"] + ["_"] * 40, eval_time="18m"),
+                scenario("stale batch cannot trigger critical", [0] * 20 + [100, "stale"] + ["_"] * 40, eval_time="12m30s"),
+                scenario("staleness clears active loss alerts", [20] * 21 + ["stale"] + ["_"] * 40, eval_time="11m"),
                 scenario("stale probe ages out", [20] * 21 + ["stale"] + ["_"] * 60, eval_time="25m"),
             ],
         }))
