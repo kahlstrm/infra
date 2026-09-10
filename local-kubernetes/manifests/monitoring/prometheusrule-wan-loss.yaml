@@ -15,29 +15,29 @@ spec:
         # alerting signal.
         - alert: WanPacketLoss
           expr: |
-            mktxp_netwatch_icmp_loss_percent > 2
-          for: 10m
+            avg_over_time(mktxp_netwatch_icmp_loss_percent[10m]) > 2
+            and mktxp_netwatch_icmp_loss_percent
+          for: 2m
           labels:
             severity: warning
           annotations:
             summary: "WAN packet loss to {{ $labels.name }}: {{ $value | printf \"%.1f\" }}%"
             description: |
-              Probe {{ $labels.name }} has seen over 2% ICMP loss for 10 minutes ({{ $value | printf "%.1f" }}%).
-              Loss on isp-gateway alone points at the access link; loss on the public
-              resolvers as well points at the segment or beyond. Cross-check the modem's
-              DOCSIS counters, since uncorrectable codewords are caused by noise and never
-              by congestion.
+              Router {{ $labels.routerboard_name }}, probe {{ $labels.name }}: 10-minute
+              average ICMP loss has stayed above 2% for 2 minutes ({{ $value | printf "%.1f" }}%).
+              Compare the ISP gateway and public resolver probes, then check the modem's DOCSIS counters.
         - alert: WanPacketLossCritical
           expr: |
-            mktxp_netwatch_icmp_loss_percent > 10
-          for: 5m
+            avg_over_time(mktxp_netwatch_icmp_loss_percent[5m]) > 10
+            and mktxp_netwatch_icmp_loss_percent
+          for: 2m
           labels:
             severity: critical
           annotations:
             summary: "Severe WAN packet loss to {{ $labels.name }}: {{ $value | printf \"%.1f\" }}%"
             description: |
-              Probe {{ $labels.name }} has seen over 10% ICMP loss for 5 minutes. At this
-              level TCP throughput collapses regardless of link speed.
+              Router {{ $labels.routerboard_name }}, probe {{ $labels.name }}: 5-minute
+              average ICMP loss has stayed above 10% for 2 minutes ({{ $value | printf "%.1f" }}%).
 
     - name: router-certificate.rules
       rules:
