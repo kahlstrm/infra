@@ -32,8 +32,7 @@ locals {
     # Disable all IPv6 until the ISP fixes it.
     enable_ipv6      = false
     ipv6_prefix_hint = "::/56"
-    # The ISP's first hop is added automatically from the routing table; loss there but
-    # not on the resolvers points at our access link, loss on all of them further out.
+    # The default gateway probe is added automatically from the routing table.
     netwatch_targets = {
       cloudflare-dns = "1.1.1.1"
       google-dns     = "8.8.8.8"

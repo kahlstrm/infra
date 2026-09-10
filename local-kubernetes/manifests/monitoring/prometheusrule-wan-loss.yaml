@@ -25,7 +25,7 @@ spec:
             description: |
               Router {{ $labels.routerboard_name }}, probe {{ $labels.name }}: 10-minute
               average ICMP loss has stayed above 2% for 2 minutes ({{ $value | printf "%.1f" }}%).
-              Compare the ISP gateway and public resolver probes, then check the modem's DOCSIS counters.
+              Compare the default gateway and public resolver probes, then check the modem's DOCSIS counters.
         - alert: WanPacketLossCritical
           expr: |
             avg_over_time(mktxp_netwatch_icmp_loss_percent[5m]) > 10
