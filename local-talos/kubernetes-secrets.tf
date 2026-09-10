@@ -244,3 +244,44 @@ resource "kubernetes_secret" "opencode_credentials" {
     OPENCODE_SERVER_PASSWORD = local.config["opencode"]["server_password"]
   }
 }
+
+resource "kubernetes_namespace" "docsight" {
+  metadata {
+    name = "docsight"
+  }
+}
+
+ephemeral "random_password" "docsight_admin" {
+  length  = 48
+  special = false
+}
+
+ephemeral "random_password" "docsight_scrape" {
+  length  = 64
+  special = false
+}
+
+resource "kubernetes_secret_v1" "docsight_credentials" {
+  depends_on = [kubernetes_namespace.docsight]
+  metadata {
+    name      = "docsight-credentials"
+    namespace = kubernetes_namespace.docsight.metadata[0].name
+  }
+  # Increment to rotate both credentials, then restart DOCSight to rerun bootstrap.
+  data_wo_revision = 1
+  data_wo = {
+    ADMIN_PASSWORD        = ephemeral.random_password.docsight_admin.result
+    DOCSIGHT_SCRAPE_TOKEN = "dsk_${ephemeral.random_password.docsight_scrape.result}"
+  }
+}
+
+resource "kubernetes_secret_v1" "docsight_modem_credentials" {
+  metadata {
+    name      = "docsight-modem-credentials"
+    namespace = kubernetes_namespace.docsight.metadata[0].name
+  }
+  data = {
+    MODEM_USER     = local.config["cable_modem"]["username"]
+    MODEM_PASSWORD = local.config["cable_modem"]["password"]
+  }
+}

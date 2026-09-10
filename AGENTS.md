@@ -45,7 +45,7 @@ concurrent state writes. See [commissioning](local-networking/README.md#adopting
 
 ## Secret Management
 
-Secrets flow from Google Secret Manager → Terraform → Kubernetes. **Never create Kubernetes secrets manually.**
+Existing credentials flow from Google Secret Manager → Terraform → Kubernetes. Generate application credentials with ephemeral Terraform resources and write-only Kubernetes Secret fields. **Never create Kubernetes secrets manually.**
 
 ### Editing Secrets
 

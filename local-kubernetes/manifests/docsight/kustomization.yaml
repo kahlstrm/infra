@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: docsight
+resources:
+- resources.yaml
+- prometheusrule.yaml
+- ingress.yaml
+configMapGenerator:
+- name: docsight-scripts
+  files:
+  - scripts/bootstrap.py
+images:
+- name: docsight
+  newName: ghcr.io/kahlstrm/docsight
+  newTag: main
+  digest: sha256:61506dde2dd280d92a7925bf487687eda6101368cfc05d1c21d9048a00714613
