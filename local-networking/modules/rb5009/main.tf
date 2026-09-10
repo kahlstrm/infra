@@ -6,27 +6,6 @@ terraform {
   }
 }
 
-
-resource "routeros_ip_address" "bridge_ip" {
-  interface = var.bridge_interface
-  address   = "${var.config.ip}/24"
-}
-
-resource "routeros_ip_address" "transit_address" {
-  interface = var.config.transit_interface
-  address   = var.config.transit_address
-}
-
-resource "routeros_ip_route" "peer_lan" {
-  for_each      = var.peers
-  dst_address   = each.value.network
-  disabled      = false
-  gateway       = each.value.gateway
-  check_gateway = "ping"
-  distance      = 1
-  comment       = "Primary route to ${each.key} LAN via transit link"
-}
-
 module "dhcp_lan" {
   source           = "../dhcp"
   dhcp_server_name = var.lan_dhcp_config.server_name
@@ -67,11 +46,6 @@ module "ipv6" {
   bridge_interface = var.bridge_interface
   enable_ipv6      = var.enable_ipv6
   prefix_hint      = var.ipv6_prefix_hint
-}
-
-resource "routeros_file" "bootstrap_script" {
-  name     = var.bootstrap_script.filename
-  contents = var.bootstrap_script.content
 }
 
 module "cake" {

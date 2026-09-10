@@ -14,14 +14,12 @@ module "rb5009" {
     routeros = routeros.stationary
   }
 
-  bootstrap_script  = var.config.bootstrap_script
   config            = var.config.device_config
   lan_dhcp_config   = var.config.dhcp_config
   lan_static_leases = var.config.static_leases
   bridge_interface  = var.config.bridge_interface
   dns_a_records     = var.config.dns_a_records
   wan_interface     = var.config.wan_interface
-  peers             = var.config.peers
   enable_cake       = var.config.enable_cake
   enable_ipv6       = var.config.enable_ipv6
   ipv6_prefix_hint  = var.config.ipv6_prefix_hint

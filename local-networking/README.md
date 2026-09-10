@@ -68,23 +68,65 @@ This network is designed for high performance when docked and graceful reachabil
 - **ZeroTier Paths**: High-distance routes over ZeroTier connect `10.10.10.0/24` and `10.1.1.0/24` when the wired interconnect is absent.
 - **Kuberack Upstream**: When separated, kuberack needs its own WAN connection or ZeroTier path to reach the internet.
 
+## Adopting a bootstrapped router
+
+Bootstrap installs a self-signed HTTPS certificate. Until Terraform installs the
+managed certificates, both the importer and RouterOS providers need the existing
+`ALLOW_INSECURE` override. Run from the repository root:
+
+```sh
+terraform -chdir=local-networking init
+(
+  export TF_VAR_ALLOW_INSECURE=true
+  just adopt-bootstrap --router stationary --router kuberack
+  just adopt-bootstrap --router stationary --router kuberack --apply
+  terraform -chdir=local-networking plan -out=bootstrap.tfplan
+  # Review the plan before applying it.
+  terraform -chdir=local-networking apply bootstrap.tfplan
+)
+terraform -chdir=local-networking plan
+```
+
+Select only the router being commissioned when resetting one site. The subshell
+limits the override to this commissioning session; the final plan checks access
+with normal certificate verification. Terraform saved plans include variable
+values, so do not reuse this bootstrap plan for subsequent operations. The
+importer never automatically retries with certificate verification disabled.
+
 ## Provisioning Responsibilities
 
 **Bootstrap script (one-time after reset)**
-- Set system identity, build LAN bridge (ports, MAC), enable IPv6 SLAAC/RA on the bridge.
+
+- Set system identity and build the LAN bridge (ports, MAC).
+- Set management IPv4 addresses on the LAN bridge and transit interface, and add IPv4 routes to the peer LAN via transit.
 - Configure transit interface with IPv6 address and add to LAN/MGMT_ALLOWED lists.
-- Add symmetric IPv6 management routes so routers can reach each other during bootstrap:
+- Add symmetric IPv6 management routes for use when IPv6 is enabled:
   - Stationary: route to `fd00:de:ad:10::/64` via `fd00:de:ad:ff::1` (kuberack transit)
   - Kuberack: route to `fd00:de:ad:1::/64` via `fd00:de:ad:ff::2` (stationary transit)
-- Add static DNS AAAA records for both routers (resolving to local bridge IPs).
-- Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client + IPv6 PD, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
-- No IPv4 addresses, no DHCP servers, no static routes—left to Terraform.
+- Add static DNS A and AAAA records for both routers (resolving to local bridge IPs); disable AAAA records for routers with IPv6 disabled.
+- Create interface lists (WAN/LAN/MGMT_ALLOWED), baseline firewall/NAT, WAN DHCP client, enable DNS, generate self-signed certs, optionally install ZeroTier binary.
+- DHCP servers and leases are configured by Terraform afterward.
+
+Run the bootstrap importer before the first apply after commissioning or reset.
+It binds the existing management IPv4 addresses, peer IPv4 routes, router DNS
+records, global IPv6 settings, and LAN advertisements to the per-router bootstrap
+modules in Terraform state. Terraform then manages these objects on subsequent applies.
+
+`enable_ipv6=false` disables all IPv6, including local routing, advertisements,
+and router AAAA records. Enable it only with working upstream IPv6: local-only
+IPv6 would need explicit client routes instead of the advertised default route.
+
+For existing routers: adopt first, review/apply Terraform, then **reboot each
+router** (`/system reboot`) and verify IPv4 access. Terraform does not reboot them.
+Reconnect clients that retain old IPv6 routes or DNS settings.
 
 **Terraform apply (ongoing)**
-- IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether1); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
+
+- Manage adopted IPv4 addressing: `10.1.1.1/24` on stationary bridge; `10.254.254.2/30` on stationary transit (ether1); `10.254.254.1/30` on kuberack transit (ether1); `10.10.10.1/24` on kuberack bridge.
 - DHCP: `stationary-dhcp` for 10.1.1.0/24 with static leases; `kuberack-dhcp` for 10.10.10.0/24 with static leases.
+- IPv6: manage the adopted settings and advertisements; request WAN prefix delegation only when enabled.
 - DNS: resolver settings plus static records/adlists on both routers.
-- Routing: static route on stationary to `10.10.10.0/24` via `10.254.254.1`; static route on kuberack to `10.1.1.0/24` via `10.254.254.2`; ZeroTier fallback routes (distance 200) both ways.
+- Routing: manage adopted peer routes via transit; add ZeroTier fallback routes (distance 200) both ways.
 - ZeroTier instances/interfaces/addresses and MGMT_ALLOWED membership.
 - Users/certs/QoS: mktxp & external_dns users, ACME certs, cake QoS on kuberack WAN, and uploading the bootstrap script.
 
@@ -107,7 +149,8 @@ The configuration is organized into two Terraform modules:
 ### Usage
 
 - **Normal operation**: `terraform apply`
-- **Device specific apply**: `terraform apply -target=module.stationary`
+- **Stationary only**: `terraform apply -target=module.stationary -target=module.bootstrap_stationary`
+- **Kuberack only**: `terraform apply -target=module.kuberack -target=module.bootstrap_kuberack`
 
 ### SSH Access
 

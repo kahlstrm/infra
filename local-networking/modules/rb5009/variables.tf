@@ -6,14 +6,6 @@ variable "config" {
   })
 }
 
-variable "bootstrap_script" {
-  type = object({
-    filename = string
-    content  = string
-  })
-}
-
-
 variable "lan_static_leases" {
   type = map(object({
     ip          = string
@@ -52,7 +44,7 @@ variable "enable_cake" {
 }
 
 variable "enable_ipv6" {
-  description = "Request an IPv6 prefix from the ISP and use IPv6 DNS resolvers. Set false while upstream IPv6 is broken."
+  description = "Enable IPv6 globally, including local addressing, WAN prefix delegation, router advertisements, and IPv6 DNS."
   type        = bool
   default     = true
 }
@@ -70,12 +62,4 @@ variable "ipv6_prefix_hint" {
   description = "Prefix size to request from the ISP, e.g. \"::/56\". Null omits the hint."
   type        = string
   default     = null
-}
-
-variable "peers" {
-  description = "Peer networks to route to via transit link"
-  type = map(object({
-    network = string
-    gateway = string
-  }))
 }
