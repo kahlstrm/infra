@@ -39,11 +39,6 @@ module "netwatch" {
   )
 }
 
-moved {
-  from = module.netwatch.routeros_tool_netwatch.probe["isp-gateway"]
-  to   = module.netwatch.routeros_tool_netwatch.probe["default-gateway"]
-}
-
 module "ipv6" {
   source           = "../ipv6"
   wan_interface    = var.wan_interface
