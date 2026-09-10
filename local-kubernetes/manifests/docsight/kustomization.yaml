@@ -13,4 +13,4 @@ images:
 - name: docsight
   newName: ghcr.io/kahlstrm/docsight
   newTag: main
-  digest: sha256:61506dde2dd280d92a7925bf487687eda6101368cfc05d1c21d9048a00714613
+  digest: sha256:921e86d616b7c4a91583fc2d5b1212da2df6a8543687580b7e81a00b2fc9fb47
