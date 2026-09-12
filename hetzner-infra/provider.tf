@@ -5,7 +5,7 @@ terraform {
       source  = "hashicorp/google"
     }
     hcloud = {
-      version = "~> 1.0"
+      version = "~> 1.58"
       source  = "hetznercloud/hcloud"
     }
     cloudflare = {

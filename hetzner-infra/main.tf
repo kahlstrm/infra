@@ -62,7 +62,7 @@ resource "hcloud_server" "poenttoe" {
   image       = "ubuntu-24.04"
 
   ssh_keys           = [data.hcloud_ssh_key.mac_personal.id]
-  firewall_ids       = concat([hcloud_firewall.deny_all.id, hcloud_firewall.headscale.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
+  firewall_ids       = concat([hcloud_firewall.deny_all.id, hcloud_firewall.headscale.id, hcloud_firewall.iperf.id], var.BOOTSTRAP ? [hcloud_firewall.ssh_only.id] : [])
   user_data          = local.nixos_infect_cloud_config
   delete_protection  = true
   rebuild_protection = true
