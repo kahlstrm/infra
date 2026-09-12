@@ -3,6 +3,10 @@ variable "name" {
   default = "wan-cake"
 }
 variable "wan_interface" { type = string }
+variable "disabled" {
+  type    = bool
+  default = false
+}
 # run test in https://www.waveform.com/tools/bufferbloat and put in them numbres
 # keep lowering until you get +1 ms max on both
 variable "down_mbps" { type = number }

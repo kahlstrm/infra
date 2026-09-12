@@ -17,6 +17,7 @@ variable "output_directory" {
 
 locals {
   script = templatefile("${path.module}/bootstrap.tftpl.rsc", merge(var.config, {
+    firewall_tables    = [for name in ["ipv4_nat", "ipv4_filter", "ipv6_addresses", "ipv6_filter"] : local.firewall_tables[name]]
     management_routes  = values(local.routes)
     local_bridge_ports = join("; ", formatlist("\"%s\"", var.config.local_bridge_ports))
   }))
@@ -86,7 +87,8 @@ output "adoption" {
       match    = { name = "${var.config.system_identity}.rsc" }
       optional = true
     }],
-    local.ipv6_adoption
+    local.ipv6_adoption,
+    local.firewall_adoption
   )
 }
 

@@ -1,4 +1,5 @@
 import json
+from itertools import groupby
 import os
 import socket
 import time
@@ -80,6 +81,23 @@ class QemuPortTest(unittest.TestCase):
                 router.forwarded_port("tcp", 22)
 
 
+class BootstrapFirewallOrderTest(unittest.TestCase):
+    def test_generated_scripts_preserve_original_table_order(self):
+        directory = Path(__file__).resolve().parents[2] / "local-networking/bootstrap/generated"
+        expected = [
+            "/ip/firewall/nat", "/ip/firewall/filter",
+            "/ipv6/firewall/address-list", "/ipv6/firewall/filter",
+        ]
+        for site in ("stationary", "kuberack"):
+            with self.subTest(site=site):
+                tables = [
+                    line.split(" add ", 1)[0]
+                    for line in (directory / f"{site}.rsc").read_text().splitlines()
+                    if line.startswith(("/ip/firewall/", "/ipv6/firewall/"))
+                ]
+                self.assertEqual([table for table, _ in groupby(tables)], expected)
+
+
 class AdoptionPlanTest(unittest.TestCase):
     def plan(self, resource_type, actions, name="management"):
         return json.dumps({
@@ -100,6 +118,27 @@ class AdoptionPlanTest(unittest.TestCase):
                 RuntimeError, "routeros_ip_address.management"
             ):
                 verify_adoption_plan(self.plan("routeros_ip_address", actions))
+
+    def test_only_allows_initial_firewall_order_creation(self):
+        for name in ("ipv4_filter", "ipv6_filter"):
+            verify_adoption_plan(self.plan("routeros_move_items", ["create"], name))
+            for actions in (["update"], ["delete"], ["delete", "create"]):
+                with self.assertRaises(RuntimeError):
+                    verify_adoption_plan(self.plan("routeros_move_items", actions, name))
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(self.plan("routeros_move_items", ["create"], "other"))
+
+    def test_recovery_allows_rebinding_order_ids_only(self):
+        verify_adoption_plan(
+            self.plan("routeros_move_items", ["update"], "ipv4_filter"), recovery=True
+        )
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(self.plan("routeros_ip_address", ["update"]), recovery=True)
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(
+                self.plan("routeros_move_items", ["delete", "create"], "ipv4_filter"),
+                recovery=True,
+            )
 
     def test_only_allows_script_file_creation(self):
         for resource_type in ("local_file", "routeros_file"):

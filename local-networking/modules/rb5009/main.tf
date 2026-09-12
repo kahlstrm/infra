@@ -48,6 +48,7 @@ module "ipv6" {
 }
 
 module "cake" {
+  disabled      = var.cake_disabled
   count         = var.enable_cake ? 1 : 0
   source        = "../cake/"
   down_mbps     = 800

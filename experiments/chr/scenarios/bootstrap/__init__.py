@@ -13,13 +13,16 @@ from lab import SOURCE, Lab, run
 REPO = SOURCE.parents[1]
 
 
-def verify_adoption_plan(plan):
+def verify_adoption_plan(plan, recovery=False):
     unexpected = run(
         "jq",
         "-r",
+        "--argjson", "recovery", "true" if recovery else "false",
         '.resource_changes[] | select(.change.actions != ["no-op"]) | '
-        'select(((.type == "local_file" or .type == "routeros_file") and '
-        '.name == "script" and .change.actions == ["create"]) | not) | .address',
+        'select((((.type == "local_file" or .type == "routeros_file") and '
+        '.name == "script" and .change.actions == ["create"]) or '
+        '(.type == "routeros_move_items" and (.name == "ipv4_filter" or .name == "ipv6_filter") and '
+        '(.change.actions == ["create"] or ($recovery and .change.actions == ["update"])))) | not) | .address',
         input=plan,
         capture_output=True,
     ).stdout.strip()
@@ -203,6 +206,12 @@ class BootstrapLab(Lab):
             time.sleep(3)
         raise RuntimeError(f"{self.name}: bootstrap failed; inspect {self.directory}")
 
+    def firewall_export(self):
+        return tuple(
+            line.strip() for line in self.ssh("/export terse").splitlines()
+            if line.startswith(("/ip firewall ", "/ipv6 firewall "))
+        )
+
     def check(self, command, expected, label):
         output = self.ssh(command).strip()
         with (self.directory / "checks.txt").open("a") as evidence:
@@ -361,7 +370,7 @@ class Adoption:
                 raise RuntimeError("Repeat adoption was not a no-op")
         self.call("plan", "plan", "-out=adopt.tfplan")
         plan = self.call("show", "show", "-json", "adopt.tfplan")
-        verify_adoption_plan(plan)
+        verify_adoption_plan(plan, recovery=recovery)
         self.call("apply", "apply", "adopt.tfplan")
         self.call("settled", "plan", "-detailed-exitcode")
         for site in ("stationary", "kuberack"):
@@ -375,6 +384,26 @@ class Adoption:
             "PASS adoption, repeat no-op and empty full bootstrap-module plan",
             flush=True,
         )
+
+    def repair_firewall_order(self, routers):
+        before = [router.firewall_export() for router in routers]
+        for router in routers:
+            for family in ("ip", "ipv6"):
+                router.ssh(
+                    f'/{family} firewall filter move [find chain=forward action=fasttrack-connection] destination=[find chain=forward comment="bootstrap: drop invalid"]'
+                )
+        self.call("order-plan", "plan", "-out=order.tfplan")
+        plan = self.call("order-show", "show", "-json", "order.tfplan")
+        run(
+            "jq", "-e",
+            '[.resource_changes[] | select(.change.actions != ["no-op"])] | length == 4 and all(.[]; .type == "routeros_move_items" and .change.actions == ["update"])',
+            input=plan, capture_output=True,
+        )
+        self.call("order-apply", "apply", "order.tfplan")
+        self.call("order-settled", "plan", "-detailed-exitcode")
+        if before != [router.firewall_export() for router in routers]:
+            raise RuntimeError("Firewall ordering repair did not restore the original rules")
+        print("PASS firewall order drift detection and repair", flush=True)
 
 def experiment(parent):
     required = (
@@ -410,14 +439,29 @@ def experiment(parent):
         for router in routers:
             router.verify()
         adoption = Adoption(root, routers)
+        firewall_before = [router.firewall_export() for router in routers]
         adoption.adopt()
+        if firewall_before != [router.firewall_export() for router in routers]:
+            raise RuntimeError("Initial Terraform adoption changed firewall rules or ordering")
+        adoption.repair_firewall_order(routers)
         with ThreadPoolExecutor(max_workers=2) as executor:
             list(executor.map(lambda router: router.reset_bootstrap(), routers))
         for router in routers:
             router.ssh(
                 ":foreach id in=[/ip dns static find] do={:local n [/ip dns static get $id name]; :local t [/ip dns static get $id type]; :local a [/ip dns static get $id address]; :local d [/ip dns static get $id disabled]; :local c [/ip dns static get $id comment]; /ip dns static remove $id; /ip dns static add name=$n type=$t address=$a disabled=$d comment=$c}"
             )
+            for family, next_comment in (
+                ("ip", "bootstrap: drop all from WAN not DSTNATed"),
+                ("ipv6", "bootstrap: drop packets with bad src ipv6"),
+            ):
+                router.ssh(
+                    f'/{family} firewall filter remove [find chain=forward comment="bootstrap: drop invalid"]; '
+                    f'/{family} firewall filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid" place-before=[find chain=forward comment="{next_comment}"]'
+                )
+        firewall_before = [router.firewall_export() for router in routers]
         adoption.adopt(recovery=True)
+        if firewall_before != [router.firewall_export() for router in routers]:
+            raise RuntimeError("Reset recovery changed firewall rules or ordering")
         for router in routers:
             router.verify()
         print(

@@ -37,6 +37,11 @@ variable "wan_interface" {
   type = string
 }
 
+variable "cake_disabled" {
+  type    = bool
+  default = false
+}
+
 variable "enable_cake" {
   description = "Enable CAKE QoS on WAN interface"
   type        = bool
