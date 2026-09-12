@@ -26,7 +26,12 @@
         ];
       in
       {
-        packages.chr-image = chrImage;
+        packages = {
+          chr-image = chrImage;
+        }
+        // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          iperf3-image = import ./experiments/network-diagnostics/iperf3-image.nix { inherit pkgs; };
+        };
         devShells.default = import ./shell.nix { inherit pkgs; };
         devShells.chr = pkgs.mkShellNoCC {
           CHR_IMAGE = chrImage;
@@ -34,7 +39,11 @@
         };
         devShells.chr-bootstrap = pkgs.mkShellNoCC {
           CHR_IMAGE = chrImage;
-          packages = chrPackages ++ [ pkgs.opentofu pkgs.jq pkgs.dig ];
+          packages = chrPackages ++ [
+            pkgs.opentofu
+            pkgs.jq
+            pkgs.dig
+          ];
         };
 
       }
