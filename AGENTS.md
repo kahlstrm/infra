@@ -43,6 +43,10 @@ add `--apply` to reconcile state, then review a Terraform plan. Use
 `TF_VAR_ALLOW_INSECURE=true` until managed certificates are installed, and avoid
 concurrent state writes. See [commissioning](local-networking/README.md#adopting-a-bootstrapped-router).
 
+Static firewall rules, address lists, and filter ordering are owned by
+`local-networking/modules/bootstrap/firewall.tf`, which also renders the bootstrap
+script. Dynamic router rules stay unmanaged.
+
 ## Secret Management
 
 Existing credentials flow from Google Secret Manager → Terraform → Kubernetes. Generate application credentials with ephemeral Terraform resources and write-only Kubernetes Secret fields. **Never create Kubernetes secrets manually.**

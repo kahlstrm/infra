@@ -147,56 +147,11 @@
 /certificate/settings set builtin-trust-store=all
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
-/ip firewall nat add chain=srcnat out-interface-list=WAN ipsec-policy=out,none action=masquerade comment="bootstrap: masquerade"
-/ip firewall {
-  filter add chain=input action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
-  filter add chain=input action=drop connection-state=invalid comment="bootstrap: drop invalid"
-  filter add chain=input action=accept protocol=icmp comment="bootstrap: accept ICMP"
-  filter add chain=input action=accept dst-address=127.0.0.1 comment="bootstrap: accept to local loopback (for CAPsMAN)"
-  filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
-  filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop all not coming from LAN"
-  filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept in ipsec policy"
-  filter add chain=forward action=accept ipsec-policy=out,ipsec comment="bootstrap: accept out ipsec policy"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related %{if cake_enabled}in-interface-list=LAN out-interface-list=LAN %{endif}comment="bootstrap: fasttrack"
-  filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related, untracked"
-  filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
-  filter add chain=forward action=drop connection-state=new connection-nat-state=!dstnat in-interface-list=WAN comment="bootstrap: drop all from WAN not DSTNATed"
-}
-/ipv6 firewall {
-  address-list add list=bad_ipv6 address=::/128 comment="bootstrap: unspecified address"
-  address-list add list=bad_ipv6 address=::1 comment="bootstrap: lo"
-  address-list add list=bad_ipv6 address=fec0::/10 comment="bootstrap: site-local"
-  address-list add list=bad_ipv6 address=::ffff:0:0/96 comment="bootstrap: ipv4-mapped"
-  address-list add list=bad_ipv6 address=::/96 comment="bootstrap: ipv4 compat"
-  address-list add list=bad_ipv6 address=100::/64 comment="bootstrap: discard only "
-  address-list add list=bad_ipv6 address=2001:db8::/32 comment="bootstrap: documentation"
-  address-list add list=bad_ipv6 address=2001:10::/28 comment="bootstrap: ORCHID"
-  address-list add list=bad_ipv6 address=3ffe::/16 comment="bootstrap: 6bone"
-  filter add chain=input action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
-  filter add chain=input action=drop connection-state=invalid comment="bootstrap: drop invalid"
-  filter add chain=input action=accept protocol=icmpv6 comment="bootstrap: accept ICMPv6"
-  filter add chain=input action=accept protocol=udp dst-port=33434-33534 comment="bootstrap: accept UDP traceroute"
-  filter add chain=input action=accept protocol=udp dst-port=546 src-address=fe80::/10 comment="bootstrap: accept DHCPv6-Client prefix delegation."
-  filter add chain=input action=accept protocol=udp dst-port=500,4500 comment="bootstrap: accept IKE"
-  filter add chain=input action=accept protocol=ipsec-ah comment="bootstrap: accept ipsec AH"
-  filter add chain=input action=accept protocol=ipsec-esp comment="bootstrap: accept ipsec ESP"
-  filter add chain=input action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
-  filter add chain=input action=accept in-interface-list=MGMT_ALLOWED comment="bootstrap: allow incoming from MGMT_ALLOWED"
-  filter add chain=input action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
-  filter add chain=forward action=fasttrack-connection connection-state=established,related %{if cake_enabled}in-interface-list=LAN out-interface-list=LAN %{endif}comment="bootstrap: fasttrack6"
-  filter add chain=forward action=accept connection-state=established,related,untracked comment="bootstrap: accept established,related,untracked"
-  filter add chain=forward action=drop connection-state=invalid comment="bootstrap: drop invalid"
-  filter add chain=forward action=drop src-address-list=bad_ipv6 comment="bootstrap: drop packets with bad src ipv6"
-  filter add chain=forward action=drop dst-address-list=bad_ipv6 comment="bootstrap: drop packets with bad dst ipv6"
-  filter add chain=forward action=drop protocol=icmpv6 hop-limit=equal:1 comment="bootstrap: rfc4890 drop hop-limit=1"
-  filter add chain=forward action=accept protocol=icmpv6 comment="bootstrap: accept ICMPv6"
-  filter add chain=forward action=accept protocol=139 comment="bootstrap: accept HIP"
-  filter add chain=forward action=accept protocol=udp dst-port=500,4500 comment="bootstrap: accept IKE"
-  filter add chain=forward action=accept protocol=ipsec-ah comment="bootstrap: accept ipsec AH"
-  filter add chain=forward action=accept protocol=ipsec-esp comment="bootstrap: accept ipsec ESP"
-  filter add chain=forward action=accept ipsec-policy=in,ipsec comment="bootstrap: accept all that matches ipsec policy"
-  filter add chain=forward action=drop in-interface-list=!LAN comment="bootstrap: drop everything else not coming from LAN"
-}
+%{for table in firewall_tables ~}
+%{for rule in table.rules ~}
+/${table.path} add ${join(" ", [for name, value in rule.properties : "${replace(name, "_", "-")}=${jsonencode(value)}"])}
+%{endfor ~}
+%{endfor ~}
 
 /certificate {
   add name=ca common-name=local_ca key-usage=key-cert-sign

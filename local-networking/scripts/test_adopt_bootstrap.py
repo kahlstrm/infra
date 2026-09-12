@@ -114,6 +114,27 @@ class AdoptionTest(unittest.TestCase):
             )
             return list(Path(directory).rglob("*.tfstate")) != []
 
+    def test_firewall_selector_disambiguates_chain_and_ignores_dynamic_rules(self):
+        binding = adopt.Binding(
+            "stationary", 'routeros_ip_firewall_filter.rules["input_invalid"]',
+            "ip/firewall/filter",
+            json.dumps({"chain": "input", "comment": "bootstrap: drop invalid", "dynamic": "false"}),
+            False,
+        )
+        rows = [
+            {".id": "*1", "chain": "forward", "comment": "bootstrap: drop invalid", "dynamic": "false"},
+            {".id": "*2", "chain": "input", "comment": "bootstrap: drop invalid", "dynamic": "true"},
+            {".id": "*3", "chain": "input", "comment": "bootstrap: drop invalid", "dynamic": "false"},
+        ]
+        self.assertEqual(adopt.match_id(binding, json.dumps(rows)), "*3")
+        rows[-1][".id"] = "*A"
+        self.assertEqual(adopt.match_id(binding, json.dumps(rows)), "*A")
+        rows.append(dict(rows[-1], **{".id": "*B"}))
+        with self.assertRaisesRegex(RuntimeError, "Ambiguous"):
+            adopt.match_id(binding, json.dumps(rows))
+        with self.assertRaisesRegex(RuntimeError, "missing"):
+            adopt.match_id(binding, json.dumps(rows[:2]))
+
     def test_old_address_is_rejected_without_state_changes(self):
         terraform = FakeTerraform({"old": "*9"})
         with self.assertRaisesRegex(RuntimeError, "already bound to routeros_ip_address.old"):

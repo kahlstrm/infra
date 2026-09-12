@@ -109,8 +109,11 @@ importer never automatically retries with certificate verification disabled.
 
 Run the bootstrap importer before the first apply after commissioning or reset.
 It binds the existing management IPv4 addresses, peer IPv4 routes, router DNS
-records, global IPv6 settings, and LAN advertisements to the per-router bootstrap
-modules in Terraform state. Terraform then manages these objects on subsequent applies.
+records, static firewall rules/address lists, global IPv6 settings, and LAN
+advertisements to the per-router bootstrap modules in Terraform state. Terraform then manages these objects on subsequent applies.
+
+Firewall definitions in `modules/bootstrap/firewall.tf` also render the bootstrap
+script. Terraform manages IPv4/IPv6 filter ordering; dynamic rules stay unmanaged.
 
 `enable_ipv6=false` disables all IPv6, including local routing, advertisements,
 and router AAAA records. Enable it only with working upstream IPv6: local-only
@@ -195,12 +198,12 @@ To bootstrap a new MikroTik device or to update an existing one with the latest 
   - [x] Minimal bootstrap script
   - [x] Basic network configuration (IP addressing, DHCP)
   - [x] Configure DHCP server with static leases (pannu, JetKVM)
-  - [ ] Firewall rules
+  - [x] Firewall rules
 - [ ] Implement kuberack module (RB5009 + CRS305)
   - [x] RB5009 minimal bootstrap script
   - [x] RB5009 basic network configuration
   - [ ] CRS305 minimal bootstrap script (basic Layer 2 switch)
-  - [ ] RB5009 firewall rules
+  - [x] RB5009 firewall rules
   - [ ] CRS305 basic switch configuration
 - [x] DNS and Peer Configuration
   - [x] Set system identity for each router

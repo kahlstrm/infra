@@ -101,6 +101,27 @@ class AdoptionPlanTest(unittest.TestCase):
             ):
                 verify_adoption_plan(self.plan("routeros_ip_address", actions))
 
+    def test_only_allows_initial_firewall_order_creation(self):
+        for name in ("ipv4_filter", "ipv6_filter"):
+            verify_adoption_plan(self.plan("routeros_move_items", ["create"], name))
+            for actions in (["update"], ["delete"], ["delete", "create"]):
+                with self.assertRaises(RuntimeError):
+                    verify_adoption_plan(self.plan("routeros_move_items", actions, name))
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(self.plan("routeros_move_items", ["create"], "other"))
+
+    def test_recovery_allows_rebinding_order_ids_only(self):
+        verify_adoption_plan(
+            self.plan("routeros_move_items", ["update"], "ipv4_filter"), recovery=True
+        )
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(self.plan("routeros_ip_address", ["update"]), recovery=True)
+        with self.assertRaises(RuntimeError):
+            verify_adoption_plan(
+                self.plan("routeros_move_items", ["delete", "create"], "ipv4_filter"),
+                recovery=True,
+            )
+
     def test_only_allows_script_file_creation(self):
         for resource_type in ("local_file", "routeros_file"):
             verify_adoption_plan(self.plan(resource_type, ["create"], "script"))

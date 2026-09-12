@@ -31,13 +31,18 @@ The test checks:
 - IPv6 is disabled globally, LAN advertisements are disabled, and router AAAA
   records stay disabled before and after adoption and reset recovery.
 - The production adoption command imports management addresses, peer routes,
-  A/AAAA records, IPv6 settings, and LAN advertisements into the bootstrap modules.
+  A/AAAA records, static firewall entries, IPv6 settings, and LAN advertisements
+  into the bootstrap modules.
   A repeated adoption changes nothing.
   Before any apply, every adopted router resource must have a no-op plan. Only
-  creation of the local/uploaded script files is allowed; updates and replacements
-  fail the test. After creating those files, the full module plan must be empty.
+  creation of the local/uploaded script files and filter ordering resources is
+  allowed; updates and replacements fail the test. After creating those files, the full module plan must be empty.
+- Adoption preserves the firewall export. Deliberately reordered IPv4/IPv6 forward
+  rules produce only ordering updates, and applying them restores that export.
 - Both routers are reset again while Terraform state is retained. DNS entries
-  are recreated to guarantee changed IDs, and adoption repairs the stale bindings.
+  and forward filter entries are recreated to guarantee changed IDs, and adoption
+  repairs the stale bindings. Recovery may refresh the ordering resources’ ID
+  lists, but must preserve the firewall export.
   DNS and routed IPv4 management are checked again.
 
 The lab's normal `terraform/main.tf` only configures providers and disposable
