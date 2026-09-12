@@ -1,4 +1,5 @@
 import json
+from itertools import groupby
 import os
 import socket
 import time
@@ -78,6 +79,23 @@ class QemuPortTest(unittest.TestCase):
             router.monitor = Mock(return_value=output)
             with self.subTest(output=output), self.assertRaisesRegex(RuntimeError, "Expected one"):
                 router.forwarded_port("tcp", 22)
+
+
+class BootstrapFirewallOrderTest(unittest.TestCase):
+    def test_generated_scripts_preserve_original_table_order(self):
+        directory = Path(__file__).resolve().parents[2] / "local-networking/bootstrap/generated"
+        expected = [
+            "/ip/firewall/nat", "/ip/firewall/filter",
+            "/ipv6/firewall/address-list", "/ipv6/firewall/filter",
+        ]
+        for site in ("stationary", "kuberack"):
+            with self.subTest(site=site):
+                tables = [
+                    line.split(" add ", 1)[0]
+                    for line in (directory / f"{site}.rsc").read_text().splitlines()
+                    if line.startswith(("/ip/firewall/", "/ipv6/firewall/"))
+                ]
+                self.assertEqual([table for table, _ in groupby(tables)], expected)
 
 
 class AdoptionPlanTest(unittest.TestCase):

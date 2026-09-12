@@ -139,6 +139,7 @@
 /certificate/settings set builtin-trust-store=all
 
 /interface list member add list=WAN interface=$wanInterface comment="bootstrap"
+/ip/firewall/nat add action="masquerade" chain="srcnat" comment="bootstrap: masquerade" ipsec-policy="out,none" out-interface-list="WAN"
 /ip/firewall/filter add action="accept" chain="input" comment="bootstrap: accept established,related,untracked" connection-state="established,related,untracked"
 /ip/firewall/filter add action="drop" chain="input" comment="bootstrap: drop invalid" connection-state="invalid"
 /ip/firewall/filter add action="accept" chain="input" comment="bootstrap: accept ICMP" protocol="icmp"
@@ -151,7 +152,6 @@
 /ip/firewall/filter add action="accept" chain="forward" comment="bootstrap: accept established,related, untracked" connection-state="established,related,untracked"
 /ip/firewall/filter add action="drop" chain="forward" comment="bootstrap: drop invalid" connection-state="invalid"
 /ip/firewall/filter add action="drop" chain="forward" comment="bootstrap: drop all from WAN not DSTNATed" connection-nat-state="!dstnat" connection-state="new" in-interface-list="WAN"
-/ip/firewall/nat add action="masquerade" chain="srcnat" comment="bootstrap: masquerade" ipsec-policy="out,none" out-interface-list="WAN"
 /ipv6/firewall/address-list add address="::/128" comment="bootstrap: unspecified address" list="bad_ipv6"
 /ipv6/firewall/address-list add address="::1" comment="bootstrap: lo" list="bad_ipv6"
 /ipv6/firewall/address-list add address="fec0::/10" comment="bootstrap: site-local" list="bad_ipv6"
