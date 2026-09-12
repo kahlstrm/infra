@@ -46,6 +46,7 @@ resource "routeros_queue_type" "cake_tx" {
 }
 
 resource "routeros_queue_simple" "wan_cake" {
+  disabled    = var.disabled
   name        = var.name
   target      = [var.wan_interface]
   max_limit   = "${local.down_limit}/${local.up_limit}"
