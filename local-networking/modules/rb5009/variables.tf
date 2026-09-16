@@ -42,6 +42,16 @@ variable "cake_disabled" {
   default = false
 }
 
+variable "cake_down_mbps" {
+  type    = number
+  default = 800
+}
+
+variable "cake_up_mbps" {
+  type    = number
+  default = 80
+}
+
 variable "enable_cake" {
   description = "Enable CAKE QoS on WAN interface"
   type        = bool

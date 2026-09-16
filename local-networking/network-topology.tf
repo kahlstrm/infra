@@ -27,7 +27,9 @@ locals {
     transit_ipv6      = local.transit_network.stationary_ipv6
     transit_interface = local.transit_network.stationary_interface
     enable_cake       = true
-    # DNA's CMTS advertises itself as our v6 router and delegates a /56, but never
+    cake_down_mbps    = 500
+    cake_up_mbps      = 50
+    # The ISP's CMTS advertises itself as our v6 router and delegates a /56, but never
     # answers Neighbor Solicitations for that gateway, so IPv6 cannot leave the CPE.
     # Disable all IPv6 until the ISP fixes it.
     enable_ipv6      = false

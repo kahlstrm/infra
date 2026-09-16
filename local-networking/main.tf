@@ -87,6 +87,8 @@ module "stationary" {
     dns_a_records    = local.dns_a_record
     wan_interface    = local.stationary.wan_interface
     enable_cake      = local.stationary.enable_cake
+    cake_down_mbps   = local.stationary.cake_down_mbps
+    cake_up_mbps     = local.stationary.cake_up_mbps
     enable_ipv6      = local.stationary.enable_ipv6
     ipv6_prefix_hint = local.stationary.ipv6_prefix_hint
     netwatch_targets = local.stationary.netwatch_targets

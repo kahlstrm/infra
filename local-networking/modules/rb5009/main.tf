@@ -51,8 +51,8 @@ module "cake" {
   disabled      = var.cake_disabled
   count         = var.enable_cake ? 1 : 0
   source        = "../cake/"
-  down_mbps     = 800
-  up_mbps       = 80
+  down_mbps     = var.cake_down_mbps
+  up_mbps       = var.cake_up_mbps
   wan_interface = var.wan_interface
   wan_type      = "docsis"
 }

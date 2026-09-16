@@ -21,7 +21,9 @@ module "rb5009" {
   dns_a_records     = var.config.dns_a_records
   wan_interface     = var.config.wan_interface
   enable_cake       = var.config.enable_cake
-  cake_disabled     = true
+  cake_disabled     = false
+  cake_down_mbps    = var.config.cake_down_mbps
+  cake_up_mbps      = var.config.cake_up_mbps
   enable_ipv6       = var.config.enable_ipv6
   ipv6_prefix_hint  = var.config.ipv6_prefix_hint
   netwatch_targets  = var.config.netwatch_targets
