@@ -20,7 +20,7 @@ variable "pool_name" {
 }
 
 variable "prefix_hint" {
-  description = "Prefix size to request from the ISP, e.g. \"::/56\". DNA documents a /56 with a prefix hint. Null omits the hint."
+  description = "Prefix size to request from the ISP, e.g. \"::/56\". The ISP documents a /56 with a prefix hint. Null omits the hint."
   type        = string
   default     = null
 }

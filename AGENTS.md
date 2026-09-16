@@ -28,6 +28,9 @@ Site-specific applies must include the matching bootstrap module, e.g.
 
 Format all HCL: `terraform fmt -recursive`
 
+If infrastructure-as-code configuration exists, always use it for infrastructure
+changes, including temporary resources and experiments.
+
 ## Bootstrap and CHR tests
 
 Bootstrap changes must regenerate and review `local-networking/bootstrap/generated/*.rsc`.
@@ -40,8 +43,10 @@ nix develop .#chr-bootstrap --command just chr run bootstrap
 Keep scenarios under `experiments/chr/scenarios/`; see the [lab README](experiments/chr/README.md).
 After bootstrap/reset, preview `just adopt-bootstrap --router stationary` (or `kuberack`);
 add `--apply` to reconcile state, then review a Terraform plan. Use
-`TF_VAR_ALLOW_INSECURE=true` until managed certificates are installed, and avoid
-concurrent state writes. See [commissioning](local-networking/README.md#adopting-a-bootstrapped-router).
+`TF_VAR_ALLOW_INSECURE=true` only during bootstrap while the router presents its
+self-signed certificate. Omit it from normal plans and applies once the managed
+certificate is installed. Avoid concurrent state writes. See
+[commissioning](local-networking/README.md#adopting-a-bootstrapped-router).
 
 Static firewall rules, address lists, and filter ordering are owned by
 `local-networking/modules/bootstrap/firewall.tf`, which also renders the bootstrap

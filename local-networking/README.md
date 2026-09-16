@@ -72,7 +72,9 @@ This network is designed for high performance when docked and graceful reachabil
 
 Bootstrap installs a self-signed HTTPS certificate. Until Terraform installs the
 managed certificates, both the importer and RouterOS providers need the existing
-`ALLOW_INSECURE` override. Run from the repository root:
+`ALLOW_INSECURE` override. Restrict the override to this bootstrap procedure;
+normal plans and applies must verify the managed certificate. Run from the
+repository root:
 
 ```sh
 terraform -chdir=local-networking init
