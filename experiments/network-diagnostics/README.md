@@ -42,3 +42,23 @@ does not reproduce the WAN firewall/CAKE processing path.
 
 To retire the endpoint through GitOps, set its deployment replicas to zero and
 merge that change first. Then remove the application and workload manifests.
+
+## Daytime CAKE monitor
+
+`daytime-cake-monitor.py` periodically runs simultaneous iperf transfers while
+measuring latency to the router, modem and two public resolvers. With
+`--diagnose-drops`, a flagged trial immediately triggers separate upload,
+download and simultaneous retries. Store its raw output outside the repository:
+
+```sh
+python3 experiments/network-diagnostics/daytime-cake-monitor.py \
+  --output ~/.local/state/cake-day-monitor \
+  --host poenttoe \
+  --hours 24 \
+  --interval-seconds 600 \
+  --interval-jitter-seconds 180 \
+  --minimum-download-mbps 450 \
+  --minimum-upload-mbps 42 \
+  --maximum-latency-delta-ms 10 \
+  --diagnose-drops
+```
