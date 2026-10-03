@@ -1,5 +1,7 @@
 # Infrastructure
 
+> **Moved to [config/infra](https://github.com/kahlstrm/config/tree/main/infra).**
+
 This repository is an experimental playground for managing a personal hardware setup using Infrastructure as Code. It uses Terraform for the declarative setup, Nix for tooling, and Just for scripting, with a focus on leveraging free-tier services from Google Cloud.
 
 ## Hardware Setup
